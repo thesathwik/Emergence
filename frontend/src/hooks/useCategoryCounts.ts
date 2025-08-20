@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { apiService } from '../services/api';
 import { Agent } from '../types';
 
@@ -7,7 +7,7 @@ export const useCategoryCounts = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchCategoryCounts = async () => {
+  const fetchCategoryCounts = useCallback(async () => {
     setLoading(true);
     setError(null);
     
@@ -33,9 +33,9 @@ export const useCategoryCounts = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const updateCategoryCounts = (agents: Agent[]) => {
+  const updateCategoryCounts = useCallback((agents: Agent[]) => {
     const counts: Record<string, number> = {
       '': agents.length, // Total count
     };
@@ -46,11 +46,11 @@ export const useCategoryCounts = () => {
     });
     
     setCategoryCounts(counts);
-  };
+  }, []);
 
   useEffect(() => {
     fetchCategoryCounts();
-  }, []);
+  }, [fetchCategoryCounts]);
 
   return {
     categoryCounts,
