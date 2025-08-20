@@ -16,7 +16,8 @@ console.log('API Configuration:', {
   NODE_ENV: process.env.NODE_ENV,
   hostname: window.location.hostname,
   isProduction: isProduction,
-  baseURL: baseURL
+  baseURL: baseURL,
+  timestamp: new Date().toISOString()
 });
 
 const api = axios.create({
