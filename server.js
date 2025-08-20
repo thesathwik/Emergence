@@ -465,6 +465,377 @@ app.get('/api/agents/top/downloaded', async (req, res) => {
   }
 });
 
+// ============================================================================
+// COMMUNICATION API ENDPOINTS
+// ============================================================================
+
+// POST /api/webhook/register - Agent registration endpoint
+app.post('/api/webhook/register', async (req, res) => {
+  try {
+    const { agent_id, instance_name, endpoint_url, metadata } = req.body;
+    
+    // Validate required fields
+    if (!agent_id || !instance_name) {
+      return res.status(400).json({
+        error: 'Missing required fields',
+        message: 'agent_id and instance_name are required',
+        required: ['agent_id', 'instance_name'],
+        received: Object.keys(req.body)
+      });
+    }
+    
+    // Validate agent_id is a positive integer
+    const agentId = parseInt(agent_id);
+    if (isNaN(agentId) || agentId <= 0) {
+      return res.status(400).json({
+        error: 'Invalid agent_id',
+        message: 'agent_id must be a positive number'
+      });
+    }
+    
+    // Validate instance_name is not empty
+    if (typeof instance_name !== 'string' || instance_name.trim().length === 0) {
+      return res.status(400).json({
+        error: 'Invalid instance_name',
+        message: 'instance_name must be a non-empty string'
+      });
+    }
+    
+    // Check if agent exists
+    const agent = await dbHelpers.getAgentById(agentId);
+    if (!agent) {
+      return res.status(404).json({
+        error: 'Agent not found',
+        message: `No agent found with ID: ${agentId}`
+      });
+    }
+    
+    // Validate endpoint_url if provided
+    if (endpoint_url && typeof endpoint_url !== 'string') {
+      return res.status(400).json({
+        error: 'Invalid endpoint_url',
+        message: 'endpoint_url must be a string'
+      });
+    }
+    
+    // Validate metadata if provided
+    if (metadata && typeof metadata !== 'object') {
+      return res.status(400).json({
+        error: 'Invalid metadata',
+        message: 'metadata must be an object'
+      });
+    }
+    
+    // Create agent instance
+    const instanceData = {
+      agent_id: agentId,
+      instance_name: instance_name.trim(),
+      status: 'running',
+      endpoint_url: endpoint_url ? endpoint_url.trim() : null,
+      metadata: metadata || null
+    };
+    
+    const instance = await dbHelpers.createAgentInstance(instanceData);
+    
+    // Return success response
+    res.status(201).json({
+      message: 'Agent instance registered successfully',
+      instance: {
+        id: instance.id,
+        agent_id: instance.agent_id,
+        instance_name: instance.instance_name,
+        status: instance.status,
+        endpoint_url: instance.endpoint_url,
+        metadata: instance.metadata,
+        created_at: instance.created_at
+      },
+      agent: {
+        id: agent.id,
+        name: agent.name,
+        description: agent.description,
+        category: agent.category
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error registering agent instance:', error);
+    res.status(500).json({
+      error: 'Failed to register agent instance',
+      message: error.message
+    });
+  }
+});
+
+// POST /api/webhook/ping - Agent health check endpoint
+app.post('/api/webhook/ping', async (req, res) => {
+  try {
+    const { instance_id, status, metadata } = req.body;
+    
+    // Validate required fields
+    if (!instance_id) {
+      return res.status(400).json({
+        error: 'Missing required fields',
+        message: 'instance_id is required',
+        required: ['instance_id'],
+        received: Object.keys(req.body)
+      });
+    }
+    
+    // Validate instance_id is a positive integer
+    const instanceId = parseInt(instance_id);
+    if (isNaN(instanceId) || instanceId <= 0) {
+      return res.status(400).json({
+        error: 'Invalid instance_id',
+        message: 'instance_id must be a positive number'
+      });
+    }
+    
+    // Validate status if provided
+    const validStatuses = ['running', 'stopped', 'maintenance', 'error'];
+    if (status && !validStatuses.includes(status)) {
+      return res.status(400).json({
+        error: 'Invalid status',
+        message: `Status must be one of: ${validStatuses.join(', ')}`,
+        validStatuses
+      });
+    }
+    
+    // Validate metadata if provided
+    if (metadata && typeof metadata !== 'object') {
+      return res.status(400).json({
+        error: 'Invalid metadata',
+        message: 'metadata must be an object'
+      });
+    }
+    
+    // Check if instance exists
+    const existingInstance = await dbHelpers.getAgentInstanceById(instanceId);
+    if (!existingInstance) {
+      return res.status(404).json({
+        error: 'Instance not found',
+        message: `No instance found with ID: ${instanceId}`
+      });
+    }
+    
+    // Update last ping time
+    await dbHelpers.updateLastPing(instanceId);
+    
+    // Update status if provided
+    if (status) {
+      await dbHelpers.updateInstanceStatus(instanceId, status);
+    }
+    
+    // Update metadata if provided
+    if (metadata) {
+      const updatedMetadata = {
+        ...existingInstance.metadata,
+        ...metadata,
+        last_ping: new Date().toISOString()
+      };
+      
+      await dbHelpers.updateAgentInstance(instanceId, {
+        instance_name: existingInstance.instance_name,
+        status: status || existingInstance.status,
+        endpoint_url: existingInstance.endpoint_url,
+        metadata: updatedMetadata
+      });
+    }
+    
+    // Get updated instance
+    const updatedInstance = await dbHelpers.getAgentInstanceById(instanceId);
+    
+    // Return success response
+    res.json({
+      message: 'Health check received successfully',
+      instance: {
+        id: updatedInstance.id,
+        agent_id: updatedInstance.agent_id,
+        instance_name: updatedInstance.instance_name,
+        status: updatedInstance.status,
+        endpoint_url: updatedInstance.endpoint_url,
+        last_ping: updatedInstance.last_ping,
+        metadata: updatedInstance.metadata
+      },
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('Error processing health check:', error);
+    res.status(500).json({
+      error: 'Failed to process health check',
+      message: error.message
+    });
+  }
+});
+
+// GET /api/agents/:id/instances - List running instances for an agent
+app.get('/api/agents/:id/instances', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.query;
+    
+    // Validate agent ID
+    const agentId = parseInt(id);
+    if (!id || isNaN(agentId) || agentId <= 0) {
+      return res.status(400).json({
+        error: 'Invalid agent ID',
+        message: 'Agent ID must be a positive number'
+      });
+    }
+    
+    // Check if agent exists
+    const agent = await dbHelpers.getAgentById(agentId);
+    if (!agent) {
+      return res.status(404).json({
+        error: 'Agent not found',
+        message: `No agent found with ID: ${agentId}`
+      });
+    }
+    
+    // Get instances for the agent
+    let instances;
+    if (status) {
+      // Filter by status if provided
+      const allInstances = await dbHelpers.getInstancesByAgentId(agentId);
+      instances = allInstances.filter(instance => instance.status === status);
+    } else {
+      // Get all instances
+      instances = await dbHelpers.getInstancesByAgentId(agentId);
+    }
+    
+    // Return response
+    res.json({
+      message: `Found ${instances.length} instance(s) for agent: ${agent.name}`,
+      agent: {
+        id: agent.id,
+        name: agent.name,
+        description: agent.description,
+        category: agent.category
+      },
+      instances: instances.map(instance => ({
+        id: instance.id,
+        instance_name: instance.instance_name,
+        status: instance.status,
+        endpoint_url: instance.endpoint_url,
+        last_ping: instance.last_ping,
+        metadata: instance.metadata,
+        created_at: instance.created_at
+      })),
+      count: instances.length,
+      filtered: !!status
+    });
+    
+  } catch (error) {
+    console.error('Error fetching agent instances:', error);
+    res.status(500).json({
+      error: 'Failed to fetch agent instances',
+      message: error.message
+    });
+  }
+});
+
+// GET /api/instances - List all agent instances (with optional filtering)
+app.get('/api/instances', async (req, res) => {
+  try {
+    const { status, agent_id } = req.query;
+    
+    let instances;
+    
+    if (agent_id) {
+      // Filter by agent ID
+      const agentId = parseInt(agent_id);
+      if (isNaN(agentId) || agentId <= 0) {
+        return res.status(400).json({
+          error: 'Invalid agent_id',
+          message: 'agent_id must be a positive number'
+        });
+      }
+      
+      instances = await dbHelpers.getInstancesByAgentId(agentId);
+      
+      if (status) {
+        instances = instances.filter(instance => instance.status === status);
+      }
+    } else if (status) {
+      // Filter by status only
+      instances = await dbHelpers.getInstancesByStatus(status);
+    } else {
+      // Get all instances
+      instances = await dbHelpers.getAllAgentInstances();
+    }
+    
+    // Return response
+    res.json({
+      message: `Found ${instances.length} agent instance(s)`,
+      instances: instances.map(instance => ({
+        id: instance.id,
+        agent_id: instance.agent_id,
+        agent_name: instance.agent_name,
+        instance_name: instance.instance_name,
+        status: instance.status,
+        endpoint_url: instance.endpoint_url,
+        last_ping: instance.last_ping,
+        metadata: instance.metadata,
+        created_at: instance.created_at
+      })),
+      count: instances.length,
+      filters: {
+        status: status || null,
+        agent_id: agent_id || null
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error fetching agent instances:', error);
+    res.status(500).json({
+      error: 'Failed to fetch agent instances',
+      message: error.message
+    });
+  }
+});
+
+// GET /api/instances/stale - Get instances that haven't pinged recently
+app.get('/api/instances/stale', async (req, res) => {
+  try {
+    const { minutes = 5 } = req.query;
+    
+    // Validate minutes parameter
+    const staleMinutes = parseInt(minutes);
+    if (isNaN(staleMinutes) || staleMinutes <= 0) {
+      return res.status(400).json({
+        error: 'Invalid minutes parameter',
+        message: 'minutes must be a positive number'
+      });
+    }
+    
+    const staleInstances = await dbHelpers.getStaleInstances(staleMinutes);
+    
+    res.json({
+      message: `Found ${staleInstances.length} stale instance(s) (no ping in ${staleMinutes} minutes)`,
+      instances: staleInstances.map(instance => ({
+        id: instance.id,
+        agent_id: instance.agent_id,
+        agent_name: instance.agent_name,
+        instance_name: instance.instance_name,
+        status: instance.status,
+        endpoint_url: instance.endpoint_url,
+        last_ping: instance.last_ping,
+        metadata: instance.metadata,
+        created_at: instance.created_at
+      })),
+      count: staleInstances.length,
+      stale_threshold_minutes: staleMinutes
+    });
+    
+  } catch (error) {
+    console.error('Error fetching stale instances:', error);
+    res.status(500).json({
+      error: 'Failed to fetch stale instances',
+      message: error.message
+    });
+  }
+});
+
 // Serve React app for client-side routing in production
 if (process.env.NODE_ENV === 'production') {
   // Handle all non-API routes by serving the React app
