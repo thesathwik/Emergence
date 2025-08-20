@@ -10,7 +10,9 @@ const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:3000', // Frontend URL
+  origin: process.env.NODE_ENV === 'production' 
+    ? true  // Allow all origins in production (same domain)
+    : 'http://localhost:3000', // Frontend URL in development
   credentials: true
 }));
 app.use(express.json());
@@ -18,6 +20,11 @@ app.use(express.urlencoded({ extended: true }));
 
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Serve frontend build files in production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, 'frontend/build')));
+}
 
 // Ensure uploads directory exists
 const uploadDir = './uploads';
@@ -440,10 +447,17 @@ app.get('/api/agents/top/downloaded', async (req, res) => {
   }
 });
 
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({ error: 'Route not found' });
-});
+// Serve React app for client-side routing in production
+if (process.env.NODE_ENV === 'production') {
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'frontend/build/index.html'));
+  });
+} else {
+  // 404 handler for development
+  app.use('*', (req, res) => {
+    res.status(404).json({ error: 'Route not found' });
+  });
+}
 
 // Error handling middleware
 app.use((err, req, res, next) => {

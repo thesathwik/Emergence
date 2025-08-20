@@ -4,7 +4,9 @@ import { getErrorMessage, logError } from '../utils/errorHandling';
 
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: 'http://localhost:3001/api',
+  baseURL: process.env.NODE_ENV === 'production' 
+    ? '/api'  // Use relative path in production (same domain)
+    : 'http://localhost:3001/api',  // Use localhost in development
   headers: {
     'Content-Type': 'application/json',
   },
@@ -127,7 +129,9 @@ export const apiService = {
       const response = await api.post<{ message: string }>(`/agents/${id}/download`);
       
       // Then trigger the actual file download
-      const downloadUrl = `http://localhost:3001/api/agents/${id}/download`;
+      const downloadUrl = process.env.NODE_ENV === 'production' 
+        ? `/api/agents/${id}/download`  // Use relative path in production
+        : `http://localhost:3001/api/agents/${id}/download`;  // Use localhost in development
       
       // Create a temporary link element to trigger the download
       const link = document.createElement('a');
