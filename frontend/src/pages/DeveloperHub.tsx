@@ -298,48 +298,55 @@ const DeveloperHub: React.FC = () => {
               <div className="space-y-8">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">JavaScript/Node.js</h3>
-                  <div className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm overflow-x-auto">
-                    <div>const axios = require('axios');</div>
-                    <div className="mt-2">const token = 'YOUR_JWT_TOKEN';</div>
-                    <div className="mt-2">const api = axios.create({</div>
-                    <div className="ml-4">baseURL: 'https://api.emergence.com/v1',</div>
-                    <div className="ml-4">headers: { Authorization: `Bearer ${token}` }</div>
-                    <div>});</div>
-                    <div className="mt-2">// Get all agents</div>
-                    <div>const agents = await api.get('/agents');</div>
-                  </div>
+                  <pre className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm overflow-x-auto">
+{`const axios = require('axios');
+const token = 'YOUR_JWT_TOKEN';
+const api = axios.create({
+  baseURL: 'https://api.emergence.com/v1',
+  headers: { Authorization: 'Bearer ' + token }
+});
+
+// Get all agents
+const agents = await api.get('/agents');`}
+                  </pre>
                 </div>
 
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Python</h3>
-                  <div className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm overflow-x-auto">
-                    <div>import requests</div>
-                    <div className="mt-2">token = 'YOUR_JWT_TOKEN'</div>
-                    <div className="mt-2">headers = {'{'} 'Authorization': f'Bearer {token}' {'}'}</div>
-                    <div className="mt-2">response = requests.get(</div>
-                    <div className="ml-4">'https://api.emergence.com/v1/agents',</div>
-                    <div className="ml-4">headers=headers</div>
-                    <div>)</div>
-                    <div className="mt-2">agents = response.json()</div>
-                  </div>
+                  <pre className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm overflow-x-auto">
+{`import requests
+
+token = 'YOUR_JWT_TOKEN'
+headers = { 'Authorization': 'Bearer ' + token }
+
+response = requests.get(
+  'https://api.emergence.com/v1/agents',
+  headers=headers
+)
+
+agents = response.json()`}
+                  </pre>
                 </div>
 
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">React Hook</h3>
-                  <div className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm overflow-x-auto">
-                    <div>import { useState, useEffect } from 'react';</div>
-                    <div className="mt-2">const useAgents = () => {'{'}</div>
-                    <div className="ml-4">const [agents, setAgents] = useState([]);</div>
-                    <div className="ml-4">const [loading, setLoading] = useState(true);</div>
-                    <div className="mt-2 ml-4">useEffect(() => {'{'}</div>
-                    <div className="ml-8">fetch('/api/agents')</div>
-                    <div className="ml-8">.then(res => res.json())</div>
-                    <div className="ml-8">.then(data => setAgents(data.agents))</div>
-                    <div className="ml-8">.finally(() => setLoading(false));</div>
-                    <div className="ml-4">{'}'}, []);</div>
-                    <div className="mt-2 ml-4">return { agents, loading };</div>
-                    <div>{'}'};</div>
-                  </div>
+                  <pre className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm overflow-x-auto">
+{`import { useState, useEffect } from 'react';
+
+const useAgents = () => {
+  const [agents, setAgents] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/agents')
+      .then(res => res.json())
+      .then(data => setAgents(data.agents))
+      .finally(() => setLoading(false));
+  }, []);
+
+  return { agents, loading };
+};`}
+                  </pre>
                 </div>
               </div>
             </div>
