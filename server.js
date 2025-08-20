@@ -10,10 +10,10 @@ const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? true  // Allow all origins in production (same domain)
-    : 'http://localhost:3000', // Frontend URL in development
-  credentials: true
+  origin: true, // Allow all origins
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -156,6 +156,7 @@ app.post('/api/upload', (req, res) => {
 
 // Agents API routes
 app.get('/api/agents', async (req, res) => {
+  console.log('API /api/agents called with query:', req.query);
   try {
     const { category } = req.query;
     
@@ -183,6 +184,7 @@ app.get('/api/agents', async (req, res) => {
     }
     
     // Return successful response with metadata
+    console.log('Returning agents:', agents);
     res.json({
       agents: agents,
       count: agents.length,
