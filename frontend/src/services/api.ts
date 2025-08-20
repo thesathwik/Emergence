@@ -3,10 +3,17 @@ import { AgentsResponse, SingleAgentResponse, AgentCreateResponse, ErrorResponse
 import { getErrorMessage, logError } from '../utils/errorHandling';
 
 // Create axios instance with base configuration
+const baseURL = process.env.NODE_ENV === 'production' 
+  ? '/api'  // Use relative path in production (same domain)
+  : 'http://localhost:3001/api';  // Use localhost in development
+
+console.log('API Configuration:', {
+  NODE_ENV: process.env.NODE_ENV,
+  baseURL: baseURL
+});
+
 const api = axios.create({
-  baseURL: process.env.NODE_ENV === 'production' 
-    ? '/api'  // Use relative path in production (same domain)
-    : 'http://localhost:3001/api',  // Use localhost in development
+  baseURL: baseURL,
   headers: {
     'Content-Type': 'application/json',
   },
