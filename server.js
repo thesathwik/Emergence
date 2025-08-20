@@ -449,7 +449,8 @@ app.get('/api/agents/top/downloaded', async (req, res) => {
 
 // Serve React app for client-side routing in production
 if (process.env.NODE_ENV === 'production') {
-  app.get('*', (req, res) => {
+  // Handle all non-API routes by serving the React app
+  app.get(/^(?!\/api).*/, (req, res) => {
     res.sendFile(path.join(__dirname, 'frontend/build/index.html'));
   });
 } else {
