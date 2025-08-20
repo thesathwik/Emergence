@@ -54,6 +54,25 @@ function initializeDatabase() {
       }
     });
 
+    // Create agent_instances table
+    db.run(`CREATE TABLE IF NOT EXISTS agent_instances (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      agent_id INTEGER REFERENCES agents(id),
+      instance_name TEXT NOT NULL,
+      status TEXT DEFAULT 'running',
+      endpoint_url TEXT,
+      last_ping DATETIME DEFAULT CURRENT_TIMESTAMP,
+      metadata TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`, (err) => {
+      if (err) {
+        console.error('Error creating agent_instances table:', err.message);
+      } else {
+        console.log('Agent instances table initialized successfully.');
+        migrateAgentInstancesTable();
+      }
+    });
+
     console.log('Database initialization completed.');
   });
 }
@@ -121,6 +140,64 @@ function migrateAgentsTable() {
         console.log('user_id column already exists in agents table.');
       }
     });
+  });
+}
+
+// Migration function for agent_instances table
+function migrateAgentInstancesTable() {
+  // Check if agent_instances table exists and has required columns
+  db.all("PRAGMA table_info(agent_instances)", [], (err, columns) => {
+    if (err) {
+      console.error('Error checking agent_instances table schema:', err.message);
+      return;
+    }
+    
+    if (columns.length === 0) {
+      console.log('agent_instances table does not exist, creating...');
+      db.run(`CREATE TABLE agent_instances (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        agent_id INTEGER REFERENCES agents(id),
+        instance_name TEXT NOT NULL,
+        status TEXT DEFAULT 'running',
+        endpoint_url TEXT,
+        last_ping DATETIME DEFAULT CURRENT_TIMESTAMP,
+        metadata TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`, (err) => {
+        if (err) {
+          console.error('Error creating agent_instances table:', err.message);
+        } else {
+          console.log('Successfully created agent_instances table.');
+        }
+      });
+    } else {
+      console.log('agent_instances table already exists.');
+      
+      // Check for required columns and add them if missing
+      const columnNames = columns.map(col => col.name);
+      
+      if (!columnNames.includes('metadata')) {
+        console.log('Adding metadata column to agent_instances table...');
+        db.run('ALTER TABLE agent_instances ADD COLUMN metadata TEXT', (err) => {
+          if (err) {
+            console.error('Error adding metadata column:', err.message);
+          } else {
+            console.log('Successfully added metadata column to agent_instances table.');
+          }
+        });
+      }
+      
+      if (!columnNames.includes('created_at')) {
+        console.log('Adding created_at column to agent_instances table...');
+        db.run('ALTER TABLE agent_instances ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP', (err) => {
+          if (err) {
+            console.error('Error adding created_at column:', err.message);
+          } else {
+            console.log('Successfully added created_at column to agent_instances table.');
+          }
+        });
+      }
+    }
   });
 }
 
@@ -363,6 +440,209 @@ const dbHelpers = {
           reject(err);
         } else {
           resolve({ deleted: this.changes > 0 });
+        }
+      });
+    });
+  },
+
+  // Agent Instance Management Methods
+  // Create new agent instance
+  createAgentInstance: (instanceData) => {
+    return new Promise((resolve, reject) => {
+      const { agent_id, instance_name, status, endpoint_url, metadata } = instanceData;
+      
+      db.run(
+        'INSERT INTO agent_instances (agent_id, instance_name, status, endpoint_url, metadata) VALUES (?, ?, ?, ?, ?)',
+        [agent_id, instance_name, status || 'running', endpoint_url, metadata ? JSON.stringify(metadata) : null],
+        function(err) {
+          if (err) {
+            reject(err);
+          } else {
+            resolve({ id: this.lastID, ...instanceData });
+          }
+        }
+      );
+    });
+  },
+
+  // Get all agent instances
+  getAllAgentInstances: () => {
+    return new Promise((resolve, reject) => {
+      db.all(`
+        SELECT ai.*, a.name as agent_name, a.description as agent_description 
+        FROM agent_instances ai 
+        LEFT JOIN agents a ON ai.agent_id = a.id 
+        ORDER BY ai.created_at DESC
+      `, [], (err, rows) => {
+        if (err) {
+          reject(err);
+        } else {
+          // Parse metadata JSON for each instance
+          const instances = rows.map(row => ({
+            ...row,
+            metadata: row.metadata ? JSON.parse(row.metadata) : null
+          }));
+          resolve(instances);
+        }
+      });
+    });
+  },
+
+  // Get agent instance by ID
+  getAgentInstanceById: (id) => {
+    return new Promise((resolve, reject) => {
+      db.get(`
+        SELECT ai.*, a.name as agent_name, a.description as agent_description 
+        FROM agent_instances ai 
+        LEFT JOIN agents a ON ai.agent_id = a.id 
+        WHERE ai.id = ?
+      `, [id], (err, row) => {
+        if (err) {
+          reject(err);
+        } else {
+          if (row) {
+            row.metadata = row.metadata ? JSON.parse(row.metadata) : null;
+          }
+          resolve(row);
+        }
+      });
+    });
+  },
+
+  // Get instances by agent ID
+  getInstancesByAgentId: (agentId) => {
+    return new Promise((resolve, reject) => {
+      db.all(`
+        SELECT ai.*, a.name as agent_name, a.description as agent_description 
+        FROM agent_instances ai 
+        LEFT JOIN agents a ON ai.agent_id = a.id 
+        WHERE ai.agent_id = ? 
+        ORDER BY ai.created_at DESC
+      `, [agentId], (err, rows) => {
+        if (err) {
+          reject(err);
+        } else {
+          // Parse metadata JSON for each instance
+          const instances = rows.map(row => ({
+            ...row,
+            metadata: row.metadata ? JSON.parse(row.metadata) : null
+          }));
+          resolve(instances);
+        }
+      });
+    });
+  },
+
+  // Update agent instance
+  updateAgentInstance: (id, instanceData) => {
+    return new Promise((resolve, reject) => {
+      const { instance_name, status, endpoint_url, metadata } = instanceData;
+      
+      db.run(
+        'UPDATE agent_instances SET instance_name = ?, status = ?, endpoint_url = ?, metadata = ? WHERE id = ?',
+        [instance_name, status, endpoint_url, metadata ? JSON.stringify(metadata) : null, id],
+        function(err) {
+          if (err) {
+            reject(err);
+          } else {
+            resolve({ id, ...instanceData });
+          }
+        }
+      );
+    });
+  },
+
+  // Update instance status
+  updateInstanceStatus: (id, status) => {
+    return new Promise((resolve, reject) => {
+      db.run(
+        'UPDATE agent_instances SET status = ? WHERE id = ?',
+        [status, id],
+        function(err) {
+          if (err) {
+            reject(err);
+          } else {
+            resolve({ updated: this.changes > 0, id, status });
+          }
+        }
+      );
+    });
+  },
+
+  // Update last ping time
+  updateLastPing: (id) => {
+    return new Promise((resolve, reject) => {
+      db.run(
+        'UPDATE agent_instances SET last_ping = CURRENT_TIMESTAMP WHERE id = ?',
+        [id],
+        function(err) {
+          if (err) {
+            reject(err);
+          } else {
+            resolve({ updated: this.changes > 0, id });
+          }
+        }
+      );
+    });
+  },
+
+  // Delete agent instance
+  deleteAgentInstance: (id) => {
+    return new Promise((resolve, reject) => {
+      db.run('DELETE FROM agent_instances WHERE id = ?', [id], function(err) {
+        if (err) {
+          reject(err);
+        } else {
+          resolve({ deleted: this.changes > 0 });
+        }
+      });
+    });
+  },
+
+  // Get instances by status
+  getInstancesByStatus: (status) => {
+    return new Promise((resolve, reject) => {
+      db.all(`
+        SELECT ai.*, a.name as agent_name, a.description as agent_description 
+        FROM agent_instances ai 
+        LEFT JOIN agents a ON ai.agent_id = a.id 
+        WHERE ai.status = ? 
+        ORDER BY ai.created_at DESC
+      `, [status], (err, rows) => {
+        if (err) {
+          reject(err);
+        } else {
+          // Parse metadata JSON for each instance
+          const instances = rows.map(row => ({
+            ...row,
+            metadata: row.metadata ? JSON.parse(row.metadata) : null
+          }));
+          resolve(instances);
+        }
+      });
+    });
+  },
+
+  // Get instances that haven't pinged recently (for health checks)
+  getStaleInstances: (minutes = 5) => {
+    return new Promise((resolve, reject) => {
+      db.all(`
+        SELECT ai.*, a.name as agent_name, a.description as agent_description 
+        FROM agent_instances ai 
+        LEFT JOIN agents a ON ai.agent_id = a.id 
+        WHERE ai.last_ping < datetime('now', '-${minutes} minutes') 
+        AND ai.status = 'running'
+        ORDER BY ai.last_ping ASC
+      `, [], (err, rows) => {
+        if (err) {
+          reject(err);
+        } else {
+          // Parse metadata JSON for each instance
+          const instances = rows.map(row => ({
+            ...row,
+            metadata: row.metadata ? JSON.parse(row.metadata) : null
+          }));
+          resolve(instances);
         }
       });
     });
