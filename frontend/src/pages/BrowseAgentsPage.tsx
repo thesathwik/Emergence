@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { Agent, AgentsResponse } from '../types';
@@ -16,11 +16,7 @@ const BrowseAgentsPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const { categoryCounts, updateCategoryCounts } = useCategoryCounts();
 
-  useEffect(() => {
-    fetchAgents();
-  }, []);
-
-  const fetchAgents = async (category?: string) => {
+  const fetchAgents = useCallback(async (category?: string) => {
     setLoading(true);
     setError(null);
     
@@ -38,7 +34,11 @@ const BrowseAgentsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [updateCategoryCounts]);
+
+  useEffect(() => {
+    fetchAgents();
+  }, [fetchAgents]);
 
   const handleCategoryChange = (category: string) => {
     setSelectedCategory(category);
@@ -52,13 +52,7 @@ const BrowseAgentsPage: React.FC = () => {
     fetchAgents();
   };
 
-  const handleRefresh = () => {
-    if (searchTerm.trim()) {
-      handleSearch();
-    } else {
-      fetchAgents(selectedCategory || undefined);
-    }
-  };
+
 
   const handleSearch = async () => {
     if (!searchTerm.trim()) {
@@ -80,17 +74,7 @@ const BrowseAgentsPage: React.FC = () => {
     }
   };
 
-  const handleDownload = async (agentId: string) => {
-    try {
-      await apiService.downloadAgent(agentId);
-      // Refresh the agents list to get updated download count
-      fetchAgents(selectedCategory);
-      alert('Download successful!');
-    } catch (err: any) {
-      setError(err.message || 'Failed to download agent');
-      console.error('Error downloading agent:', err);
-    }
-  };
+
 
   const sortAgents = (agentsToSort: Agent[]) => {
     return [...agentsToSort].sort((a, b) => {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 
 export interface Category {
   value: string;
@@ -28,8 +28,6 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
   categoryCounts
 }) => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const location = useLocation();
   
   // Default categories
   const defaultCategories: Category[] = [
@@ -102,10 +100,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
     return category?.count || 0;
   };
 
-  const getCategoryColor = (categoryValue: string): string => {
-    const category = categories.find(cat => cat.value === categoryValue);
-    return category?.color || 'bg-gray-100 text-gray-800 border-gray-200';
-  };
+
 
   // Dropdown Variant
   const renderDropdown = () => (

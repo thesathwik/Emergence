@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { Agent, SingleAgentResponse } from '../types';
 
 const AgentDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const [agent, setAgent] = useState<Agent | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -14,13 +13,7 @@ const AgentDetailPage: React.FC = () => {
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
 
-  useEffect(() => {
-    if (id) {
-      fetchAgent();
-    }
-  }, [id]);
-
-  const fetchAgent = async () => {
+  const fetchAgent = useCallback(async () => {
     if (!id) return;
     
     setLoading(true);
@@ -35,7 +28,13 @@ const AgentDetailPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    if (id) {
+      fetchAgent();
+    }
+  }, [id, fetchAgent]);
 
   const handleDownload = async () => {
     if (!id || !agent) return;

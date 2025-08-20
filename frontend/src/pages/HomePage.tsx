@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { Agent, AgentsResponse } from '../types';
@@ -16,29 +16,29 @@ const HomePage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const { categoryCounts, updateCategoryCounts } = useCategoryCounts();
 
+  const fetchAgents = useCallback(async (category?: string) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response: AgentsResponse = await apiService.getAgents(category);
+      setAgents(response.agents);
+      
+      // Update category counts when fetching all agents
+      if (!category) {
+        updateCategoryCounts(response.agents);
+      }
+    } catch (err: any) {
+      setError(err.userMessage || err.message || 'Failed to fetch agents');
+      console.error('Error fetching agents:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [updateCategoryCounts]);
+
   useEffect(() => {
     fetchAgents();
-  }, []);
-
-                const fetchAgents = async (category?: string) => {
-                setLoading(true);
-                setError(null);
-                
-                try {
-                  const response: AgentsResponse = await apiService.getAgents(category);
-                  setAgents(response.agents);
-                  
-                  // Update category counts when fetching all agents
-                  if (!category) {
-                    updateCategoryCounts(response.agents);
-                  }
-                } catch (err: any) {
-                  setError(err.userMessage || err.message || 'Failed to fetch agents');
-                  console.error('Error fetching agents:', err);
-                } finally {
-                  setLoading(false);
-                }
-              };
+  }, [fetchAgents]);
 
   const handleCategoryChange = (category: string) => {
     setSelectedCategory(category);
@@ -50,21 +50,7 @@ const HomePage: React.FC = () => {
     fetchAgents();
   };
 
-  const handleRefresh = () => {
-    fetchAgents(selectedCategory || undefined);
-  };
 
-  const handleDownload = async (agentId: string) => {
-    try {
-      await apiService.downloadAgent(agentId);
-      // Refresh the agents list to get updated download count
-      fetchAgents(selectedCategory);
-      alert('Download successful!');
-    } catch (err: any) {
-      setError(err.message || 'Failed to download agent');
-      console.error('Error downloading agent:', err);
-    }
-  };
 
   return (
     <div>
@@ -123,15 +109,7 @@ const HomePage: React.FC = () => {
               categoryCounts={categoryCounts}
               className="min-w-[200px]"
             />
-            <button
-              onClick={handleRefresh}
-              className="p-3 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-2xl transition-all duration-200"
-              title="Refresh agents"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button>
+
           </div>
         </div>
 
