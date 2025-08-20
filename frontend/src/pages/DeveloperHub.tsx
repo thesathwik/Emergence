@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import CodeExample from '../components/CodeExample';
+import MarkdownContent from '../components/MarkdownContent';
 
 interface Section {
   id: string;
@@ -17,6 +19,24 @@ const DeveloperHub: React.FC = () => {
       title: 'Overview',
       icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
       description: 'Welcome to the Emergence Developer Hub'
+    },
+    {
+      id: 'getting-started',
+      title: 'Getting Started',
+      icon: 'M13 10V3L4 14h7v7l9-11h-7z',
+      description: 'Quick start guide and setup'
+    },
+    {
+      id: 'agent-structure',
+      title: 'Agent Structure',
+      icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10',
+      description: 'How to structure your AI agents'
+    },
+    {
+      id: 'communication-api',
+      title: 'Communication API',
+      icon: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z',
+      description: 'API communication patterns'
     },
     {
       id: 'api-docs',
@@ -96,6 +116,694 @@ const DeveloperHub: React.FC = () => {
                   <p className="text-gray-600">Customize and extend to fit your needs.</p>
                 </div>
               </div>
+            </div>
+          </div>
+        );
+
+      case 'getting-started':
+        return (
+          <div className="space-y-8">
+            <div className="bg-white rounded-2xl p-8 border border-gray-200">
+              <MarkdownContent>
+                <h2>Getting Started with Emergence</h2>
+                <p>
+                  Welcome to Emergence! This guide will help you get up and running with our AI agent platform 
+                  in just a few minutes. Follow these steps to start building and deploying your first AI agent.
+                </p>
+
+                <h3>Prerequisites</h3>
+                <ul>
+                  <li>Node.js 16+ or Python 3.8+</li>
+                  <li>A text editor or IDE</li>
+                  <li>Git (optional, for version control)</li>
+                  <li>An Emergence account (sign up at the top right)</li>
+                </ul>
+
+                <h3>Step 1: Authentication Setup</h3>
+                <p>First, you'll need to authenticate with the Emergence platform:</p>
+              </MarkdownContent>
+
+              <CodeExample
+                title="Register and Login"
+                language="javascript"
+                code={`// Register a new account
+const response = await fetch('/api/auth/register', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    name: 'Your Name',
+    email: 'your-email@example.com',
+    password: 'secure-password'
+  })
+});
+
+const { token, user } = await response.json();
+
+// Store your token for subsequent requests
+localStorage.setItem('authToken', token);`}
+                className="mb-6"
+              />
+
+              <MarkdownContent>
+                <h3>Step 2: Install the SDK</h3>
+                <p>Choose your preferred programming language and install our SDK:</p>
+              </MarkdownContent>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <CodeExample
+                  title="Node.js/JavaScript"
+                  language="bash"
+                  code={`npm install @emergence/sdk
+
+# or with yarn
+yarn add @emergence/sdk`}
+                />
+
+                <CodeExample
+                  title="Python"
+                  language="bash"
+                  code={`pip install emergence-sdk
+
+# or with conda
+conda install emergence-sdk`}
+                />
+              </div>
+
+              <MarkdownContent>
+                <h3>Step 3: Your First API Call</h3>
+                <p>Let's make your first API call to list available agents:</p>
+              </MarkdownContent>
+
+              <CodeExample
+                title="List All Agents"
+                language="javascript"
+                code={`import { EmergenceClient } from '@emergence/sdk';
+
+const client = new EmergenceClient({
+  token: 'your-auth-token-here'
+});
+
+// Fetch all available agents
+const agents = await client.agents.list();
+console.log('Available agents:', agents);
+
+// Get a specific agent
+const agent = await client.agents.get('agent-id');
+console.log('Agent details:', agent);`}
+                className="mb-6"
+              />
+
+              <MarkdownContent>
+                <h3>Step 4: Upload Your First Agent</h3>
+                <p>Now let's upload your first AI agent to the platform:</p>
+              </MarkdownContent>
+
+              <CodeExample
+                title="Upload Agent"
+                language="javascript"
+                code={`// Prepare your agent files in a ZIP format
+const formData = new FormData();
+formData.append('file', agentZipFile);
+formData.append('name', 'My First Agent');
+formData.append('description', 'A simple AI agent for demonstration');
+formData.append('category', 'Utility');
+formData.append('author_name', 'Your Name');
+
+// Upload the agent
+const response = await fetch('/api/agents', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer ' + token
+  },
+  body: formData
+});
+
+const result = await response.json();
+console.log('Agent uploaded:', result.agent);`}
+                className="mb-6"
+              />
+
+              <MarkdownContent>
+                <h3>Next Steps</h3>
+                <p>Congratulations! You've successfully:</p>
+                <ul>
+                  <li>Set up authentication with Emergence</li>
+                  <li>Installed the SDK</li>
+                  <li>Made your first API call</li>
+                  <li>Uploaded your first agent</li>
+                </ul>
+
+                <p>Now you're ready to explore more advanced features:</p>
+                <ul>
+                  <li><strong>Agent Structure</strong> - Learn how to properly structure your AI agents</li>
+                  <li><strong>Communication API</strong> - Implement real-time communication patterns</li>
+                  <li><strong>Advanced Examples</strong> - Explore complex integration scenarios</li>
+                </ul>
+
+                <blockquote>
+                  <strong>Tip:</strong> Check out our GitHub repository for complete example projects 
+                  and templates to get started even faster!
+                </blockquote>
+              </MarkdownContent>
+            </div>
+          </div>
+        );
+
+      case 'agent-structure':
+        return (
+          <div className="space-y-8">
+            <div className="bg-white rounded-2xl p-8 border border-gray-200">
+              <MarkdownContent>
+                <h2>Agent Structure Guide</h2>
+                <p>
+                  Understanding how to properly structure your AI agents is crucial for creating 
+                  maintainable, scalable, and efficient applications. This guide covers the 
+                  recommended patterns and best practices.
+                </p>
+
+                <h3>Basic Agent Structure</h3>
+                <p>Every Emergence agent follows a standard directory structure:</p>
+              </MarkdownContent>
+
+              <CodeExample
+                title="Agent Directory Structure"
+                language="bash"
+                code={`my-agent/
+├── agent.json          # Agent configuration
+├── main.py             # Entry point
+├── requirements.txt    # Dependencies
+├── README.md          # Documentation
+├── src/               # Source code
+│   ├── __init__.py
+│   ├── agent.py       # Main agent logic
+│   ├── utils.py       # Helper functions
+│   └── models/        # AI models
+├── tests/             # Test files
+│   ├── test_agent.py
+│   └── test_utils.py
+└── assets/            # Static files
+    ├── prompts/
+    └── templates/`}
+                className="mb-6"
+              />
+
+              <MarkdownContent>
+                <h3>Agent Configuration (agent.json)</h3>
+                <p>The configuration file defines your agent's metadata and capabilities:</p>
+              </MarkdownContent>
+
+              <CodeExample
+                title="agent.json"
+                language="json"
+                code={`{
+  "name": "my-agent",
+  "version": "1.0.0",
+  "description": "A sample AI agent for demonstration",
+  "author": "Your Name",
+  "category": "Utility",
+  "entry_point": "main.py",
+  "runtime": {
+    "type": "python",
+    "version": "3.9+"
+  },
+  "capabilities": [
+    "text-processing",
+    "api-integration",
+    "real-time-communication"
+  ],
+  "config": {
+    "max_memory": "512MB",
+    "timeout": 30,
+    "environment": "production"
+  },
+  "dependencies": {
+    "external": ["openai", "requests", "numpy"],
+    "internal": []
+  },
+  "api": {
+    "endpoints": [
+      {
+        "path": "/process",
+        "method": "POST",
+        "description": "Process text input"
+      }
+    ]
+  }
+}`}
+                className="mb-6"
+              />
+
+              <MarkdownContent>
+                <h3>Main Entry Point</h3>
+                <p>Your agent's main entry point should implement the core interface:</p>
+              </MarkdownContent>
+
+              <CodeExample
+                title="main.py"
+                language="python"
+                code={`from src.agent import MyAgent
+from emergence import Agent, Context, Message
+
+class MyAgent(Agent):
+    def __init__(self, config):
+        super().__init__(config)
+        self.model = self.load_model()
+        
+    def load_model(self):
+        """Load your AI model here"""
+        pass
+    
+    async def process(self, context: Context, message: Message):
+        """Main processing function"""
+        try:
+            # Process the incoming message
+            result = await self.model.process(message.content)
+            
+            # Return response
+            return {
+                "status": "success",
+                "result": result,
+                "metadata": {
+                    "processing_time": context.elapsed_time,
+                    "model_version": self.model.version
+                }
+            }
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": str(e)
+            }
+    
+    async def health_check(self):
+        """Health check endpoint"""
+        return {
+            "status": "healthy",
+            "version": self.config.version,
+            "uptime": self.uptime
+        }
+
+# Initialize the agent
+if __name__ == "__main__":
+    config = load_config("agent.json")
+    agent = MyAgent(config)
+    agent.start()`}
+                className="mb-6"
+              />
+
+              <MarkdownContent>
+                <h3>Agent Communication Patterns</h3>
+                <p>Implement these patterns for robust agent communication:</p>
+
+                <h4>1. Request-Response Pattern</h4>
+                <p>For synchronous operations where you need immediate results:</p>
+              </MarkdownContent>
+
+              <CodeExample
+                title="Request-Response Pattern"
+                language="python"
+                code={`async def handle_request(self, request):
+    """Handle synchronous requests"""
+    # Validate input
+    if not self.validate_input(request):
+        raise ValueError("Invalid input format")
+    
+    # Process request
+    result = await self.process_sync(request.data)
+    
+    # Return immediate response
+    return {
+        "request_id": request.id,
+        "result": result,
+        "timestamp": datetime.utcnow().isoformat()
+    }`}
+                className="mb-6"
+              />
+
+              <MarkdownContent>
+                <h4>2. Event-Driven Pattern</h4>
+                <p>For asynchronous operations and real-time updates:</p>
+              </MarkdownContent>
+
+              <CodeExample
+                title="Event-Driven Pattern"
+                language="python"
+                code={`async def handle_event(self, event):
+    """Handle asynchronous events"""
+    # Process event in background
+    task_id = await self.queue_task(event)
+    
+    # Emit progress events
+    await self.emit("task.started", {
+        "task_id": task_id,
+        "estimated_duration": self.estimate_duration(event)
+    })
+    
+    try:
+        result = await self.process_async(event.data)
+        await self.emit("task.completed", {
+            "task_id": task_id,
+            "result": result
+        })
+    except Exception as e:
+        await self.emit("task.failed", {
+            "task_id": task_id,
+            "error": str(e)
+        })`}
+                className="mb-6"
+              />
+
+              <MarkdownContent>
+                <h3>Best Practices</h3>
+                <ul>
+                  <li><strong>Error Handling</strong> - Always implement comprehensive error handling</li>
+                  <li><strong>Logging</strong> - Use structured logging for debugging and monitoring</li>
+                  <li><strong>Testing</strong> - Write unit tests for all core functionality</li>
+                  <li><strong>Documentation</strong> - Document your agent's API and usage</li>
+                  <li><strong>Security</strong> - Validate all inputs and sanitize outputs</li>
+                  <li><strong>Performance</strong> - Optimize for low latency and high throughput</li>
+                </ul>
+
+                <h3>Common Patterns</h3>
+                <ul>
+                  <li><strong>State Management</strong> - Use context objects to maintain state</li>
+                  <li><strong>Configuration</strong> - Make your agent configurable via environment variables</li>
+                  <li><strong>Caching</strong> - Implement caching for expensive operations</li>
+                  <li><strong>Rate Limiting</strong> - Protect your agent from abuse</li>
+                </ul>
+              </MarkdownContent>
+            </div>
+          </div>
+        );
+
+      case 'communication-api':
+        return (
+          <div className="space-y-8">
+            <div className="bg-white rounded-2xl p-8 border border-gray-200">
+              <MarkdownContent>
+                <h2>Communication API</h2>
+                <p>
+                  The Communication API enables real-time interaction between clients and agents, 
+                  supporting multiple communication patterns including WebSockets, Server-Sent Events, 
+                  and traditional HTTP requests.
+                </p>
+
+                <h3>Connection Types</h3>
+                <p>Emergence supports three primary communication methods:</p>
+
+                <h4>1. WebSocket Connections</h4>
+                <p>For bidirectional, real-time communication:</p>
+              </MarkdownContent>
+
+              <CodeExample
+                title="WebSocket Client"
+                language="javascript"
+                code={`import { EmergenceSocket } from '@emergence/sdk';
+
+const socket = new EmergenceSocket({
+  url: 'wss://api.emergence.com/ws',
+  token: 'your-auth-token',
+  agent_id: 'agent-123'
+});
+
+// Connect to agent
+await socket.connect();
+
+// Send message to agent
+socket.send({
+  type: 'message',
+  content: 'Hello, agent!',
+  metadata: {
+    user_id: 'user-456',
+    session_id: 'session-789'
+  }
+});
+
+// Listen for responses
+socket.on('message', (response) => {
+  console.log('Agent response:', response);
+});
+
+// Handle connection events
+socket.on('connected', () => {
+  console.log('Connected to agent');
+});
+
+socket.on('disconnected', () => {
+  console.log('Disconnected from agent');
+});
+
+socket.on('error', (error) => {
+  console.error('Connection error:', error);
+});`}
+                className="mb-6"
+              />
+
+              <MarkdownContent>
+                <h4>2. Server-Sent Events (SSE)</h4>
+                <p>For one-way streaming from agent to client:</p>
+              </MarkdownContent>
+
+              <CodeExample
+                title="Server-Sent Events"
+                language="javascript"
+                code={`// Establish SSE connection
+const eventSource = new EventSource(
+  '/api/agents/agent-123/stream?token=your-auth-token'
+);
+
+// Listen for different event types
+eventSource.addEventListener('message', (event) => {
+  const data = JSON.parse(event.data);
+  console.log('New message:', data);
+});
+
+eventSource.addEventListener('status', (event) => {
+  const status = JSON.parse(event.data);
+  console.log('Agent status:', status);
+});
+
+eventSource.addEventListener('error', (event) => {
+  console.error('Stream error:', event);
+});
+
+// Send data via HTTP POST while listening to SSE
+async function sendMessage(content) {
+  await fetch('/api/agents/agent-123/message', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer your-auth-token',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      content: content,
+      stream: true  // Enable streaming response
+    })
+  });
+}`}
+                className="mb-6"
+              />
+
+              <MarkdownContent>
+                <h4>3. HTTP Long Polling</h4>
+                <p>For environments where WebSockets aren't available:</p>
+              </MarkdownContent>
+
+              <CodeExample
+                title="Long Polling"
+                language="javascript"
+                code={`class LongPollingClient {
+  constructor(agentId, token) {
+    this.agentId = agentId;
+    this.token = token;
+    this.isPolling = false;
+  }
+
+  async startPolling() {
+    this.isPolling = true;
+    
+    while (this.isPolling) {
+      try {
+        const response = await fetch(\`/api/agents/\${this.agentId}/poll\`, {
+          method: 'GET',
+          headers: {
+            'Authorization': \`Bearer \${this.token}\`
+          },
+          signal: AbortSignal.timeout(30000) // 30 second timeout
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          this.handleMessage(data);
+        }
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error('Polling error:', error);
+          await this.delay(5000); // Wait 5 seconds before retry
+        }
+      }
+    }
+  }
+
+  stopPolling() {
+    this.isPolling = false;
+  }
+
+  handleMessage(data) {
+    console.log('Received message:', data);
+  }
+
+  delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+}`}
+                className="mb-6"
+              />
+
+              <MarkdownContent>
+                <h3>Message Formats</h3>
+                <p>All communication follows a standardized message format:</p>
+              </MarkdownContent>
+
+              <CodeExample
+                title="Standard Message Format"
+                language="json"
+                code={`{
+  "id": "msg-12345",
+  "type": "message",
+  "timestamp": "2024-01-20T10:30:00Z",
+  "sender": {
+    "id": "user-456",
+    "type": "user"
+  },
+  "recipient": {
+    "id": "agent-123",
+    "type": "agent"
+  },
+  "content": {
+    "text": "Hello, how can you help me?",
+    "attachments": [],
+    "metadata": {
+      "priority": "normal",
+      "requires_response": true
+    }
+  },
+  "context": {
+    "session_id": "session-789",
+    "conversation_id": "conv-101",
+    "previous_message_id": "msg-12344"
+  }
+}`}
+                className="mb-6"
+              />
+
+              <MarkdownContent>
+                <h3>Agent Response Format</h3>
+                <p>Agents respond using a consistent format:</p>
+              </MarkdownContent>
+
+              <CodeExample
+                title="Agent Response Format"
+                language="json"
+                code={`{
+  "id": "resp-67890",
+  "type": "response",
+  "timestamp": "2024-01-20T10:30:05Z",
+  "in_response_to": "msg-12345",
+  "sender": {
+    "id": "agent-123",
+    "type": "agent",
+    "name": "CustomerCare AI"
+  },
+  "content": {
+    "text": "I'd be happy to help! What specific information are you looking for?",
+    "suggestions": [
+      "Product information",
+      "Technical support",
+      "Account management"
+    ],
+    "attachments": []
+  },
+  "metadata": {
+    "confidence": 0.95,
+    "processing_time": 1200,
+    "model_version": "v2.1",
+    "capabilities_used": ["nlp", "intent-recognition"]
+  },
+  "status": "completed"
+}`}
+                className="mb-6"
+              />
+
+              <MarkdownContent>
+                <h3>Error Handling</h3>
+                <p>Implement robust error handling for reliable communication:</p>
+              </MarkdownContent>
+
+              <CodeExample
+                title="Error Handling Example"
+                language="javascript"
+                code={`class CommunicationManager {
+  constructor(config) {
+    this.config = config;
+    this.retryCount = 0;
+    this.maxRetries = 3;
+  }
+
+  async sendMessage(message) {
+    try {
+      const response = await this.attemptSend(message);
+      this.retryCount = 0; // Reset on success
+      return response;
+    } catch (error) {
+      return this.handleError(error, message);
+    }
+  }
+
+  async handleError(error, originalMessage) {
+    console.error('Communication error:', error);
+
+    // Handle different error types
+    switch (error.code) {
+      case 'NETWORK_ERROR':
+        if (this.retryCount < this.maxRetries) {
+          this.retryCount++;
+          await this.delay(Math.pow(2, this.retryCount) * 1000);
+          return this.sendMessage(originalMessage);
+        }
+        break;
+        
+      case 'AUTH_ERROR':
+        await this.refreshAuth();
+        return this.sendMessage(originalMessage);
+        
+      case 'RATE_LIMITED':
+        const retryAfter = error.retryAfter || 60;
+        await this.delay(retryAfter * 1000);
+        return this.sendMessage(originalMessage);
+        
+      default:
+        throw error;
+    }
+    
+    throw new Error(\`Failed after \${this.maxRetries} retries\`);
+  }
+}`}
+                className="mb-6"
+              />
+
+              <MarkdownContent>
+                <h3>Best Practices</h3>
+                <ul>
+                  <li><strong>Connection Management</strong> - Implement proper connection lifecycle management</li>
+                  <li><strong>Heartbeats</strong> - Use ping/pong messages to detect connection issues</li>
+                  <li><strong>Reconnection</strong> - Implement exponential backoff for reconnection attempts</li>
+                  <li><strong>Message Queuing</strong> - Queue messages during disconnection periods</li>
+                  <li><strong>Authentication</strong> - Refresh tokens before they expire</li>
+                  <li><strong>Rate Limiting</strong> - Respect rate limits to avoid throttling</li>
+                </ul>
+              </MarkdownContent>
             </div>
           </div>
         );
@@ -296,10 +1004,10 @@ const DeveloperHub: React.FC = () => {
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Code Examples</h2>
               
               <div className="space-y-8">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">JavaScript/Node.js</h3>
-                  <pre className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm overflow-x-auto">
-{`const axios = require('axios');
+                <CodeExample
+                  title="JavaScript/Node.js Integration"
+                  language="javascript"
+                  code={`const axios = require('axios');
 const token = 'YOUR_JWT_TOKEN';
 const api = axios.create({
   baseURL: 'https://api.emergence.com/v1',
@@ -307,14 +1015,15 @@ const api = axios.create({
 });
 
 // Get all agents
-const agents = await api.get('/agents');`}
-                  </pre>
-                </div>
+const agents = await api.get('/agents');
+console.log('Available agents:', agents.data);`}
+                  className="mb-6"
+                />
 
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Python</h3>
-                  <pre className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm overflow-x-auto">
-{`import requests
+                <CodeExample
+                  title="Python Integration"
+                  language="python"
+                  code={`import requests
 
 token = 'YOUR_JWT_TOKEN'
 headers = { 'Authorization': 'Bearer ' + token }
@@ -324,30 +1033,38 @@ response = requests.get(
   headers=headers
 )
 
-agents = response.json()`}
-                  </pre>
-                </div>
+agents = response.json()
+print(f"Found {len(agents)} agents")`}
+                  className="mb-6"
+                />
 
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">React Hook</h3>
-                  <pre className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm overflow-x-auto">
-{`import { useState, useEffect } from 'react';
+                <CodeExample
+                  title="React Hook Example"
+                  language="javascript"
+                  code={`import { useState, useEffect } from 'react';
 
 const useAgents = () => {
   const [agents, setAgents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     fetch('/api/agents')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch');
+        return res.json();
+      })
       .then(data => setAgents(data.agents))
+      .catch(err => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
 
-  return { agents, loading };
-};`}
-                  </pre>
-                </div>
+  return { agents, loading, error };
+};
+
+export default useAgents;`}
+                  className="mb-6"
+                />
               </div>
             </div>
           </div>
@@ -560,9 +1277,29 @@ const useAgents = () => {
           </p>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Sidebar */}
-          <div className="lg:w-80 flex-shrink-0">
+        <div className="flex flex-col xl:flex-row gap-8">
+          {/* Mobile Section Selector */}
+          <div className="xl:hidden">
+            <div className="bg-white rounded-2xl border border-gray-200 p-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Choose Section
+              </label>
+              <select
+                value={activeSection}
+                onChange={(e) => setActiveSection(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                {sections.map((section) => (
+                  <option key={section.id} value={section.id}>
+                    {section.title} - {section.description}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Desktop Sidebar */}
+          <div className="hidden xl:block xl:w-80 flex-shrink-0">
             <div className="bg-white rounded-2xl border border-gray-200 p-6 sticky top-8">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Documentation</h2>
               <nav className="space-y-2">
@@ -577,12 +1314,12 @@ const useAgents = () => {
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={section.icon} />
                       </svg>
-                      <div>
+                      <div className="flex-1 min-w-0">
                         <div className="font-medium">{section.title}</div>
-                        <div className="text-xs text-gray-500 mt-1">{section.description}</div>
+                        <div className="text-xs text-gray-500 mt-1 truncate">{section.description}</div>
                       </div>
                     </div>
                   </button>
