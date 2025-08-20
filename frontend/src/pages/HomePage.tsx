@@ -17,11 +17,14 @@ const HomePage: React.FC = () => {
   const { categoryCounts, updateCategoryCounts } = useCategoryCounts();
 
   const fetchAgents = useCallback(async (category?: string) => {
+    console.log('fetchAgents called with category:', category);
     setLoading(true);
     setError(null);
     
     try {
+      console.log('Making API call to getAgents...');
       const response: AgentsResponse = await apiService.getAgents(category);
+      console.log('API response received:', response);
       setAgents(response.agents);
       
       // Update category counts when fetching all agents
@@ -29,9 +32,11 @@ const HomePage: React.FC = () => {
         updateCategoryCounts(response.agents);
       }
     } catch (err: any) {
+      console.error('Error in fetchAgents:', err);
       setError(err.userMessage || err.message || 'Failed to fetch agents');
       console.error('Error fetching agents:', err);
     } finally {
+      console.log('Setting loading to false');
       setLoading(false);
     }
   }, [updateCategoryCounts]);

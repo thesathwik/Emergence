@@ -3,12 +3,19 @@ import { AgentsResponse, SingleAgentResponse, AgentCreateResponse, ErrorResponse
 import { getErrorMessage, logError } from '../utils/errorHandling';
 
 // Create axios instance with base configuration
-const baseURL = process.env.NODE_ENV === 'production' 
+// Check if we're on Railway (production) by looking at the hostname
+const isProduction = process.env.NODE_ENV === 'production' || 
+                     window.location.hostname.includes('railway.app') ||
+                     window.location.hostname.includes('up.railway.app');
+
+const baseURL = isProduction 
   ? '/api'  // Use relative path in production (same domain)
   : 'http://localhost:3001/api';  // Use localhost in development
 
 console.log('API Configuration:', {
   NODE_ENV: process.env.NODE_ENV,
+  hostname: window.location.hostname,
+  isProduction: isProduction,
   baseURL: baseURL
 });
 
@@ -136,7 +143,7 @@ export const apiService = {
       const response = await api.post<{ message: string }>(`/agents/${id}/download`);
       
       // Then trigger the actual file download
-      const downloadUrl = process.env.NODE_ENV === 'production' 
+      const downloadUrl = isProduction 
         ? `/api/agents/${id}/download`  // Use relative path in production
         : `http://localhost:3001/api/agents/${id}/download`;  // Use localhost in development
       
