@@ -28,12 +28,37 @@ const api = axios.create({
   timeout: 10000, // 10 second timeout
 });
 
+// Request interceptor to add auth token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 // Error handling interceptor
 api.interceptors.response.use(
   (response: AxiosResponse) => response,
   (error: AxiosError) => {
     // Log error with context
     logError(error, 'API Request');
+    
+    // Handle authentication errors
+    if (error.response?.status === 401) {
+      // Clear invalid token
+      localStorage.removeItem('authToken');
+      
+      // Redirect to login if not already there
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
     
     // Enhance error with user-friendly message
     (error as any).userMessage = getErrorMessage(error);

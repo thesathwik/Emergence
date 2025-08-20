@@ -5,6 +5,12 @@ const fs = require('fs');
 const multer = require('multer');
 const { db, dbHelpers, testConnection } = require('./database');
 
+// Import auth routes
+const authRoutes = require('./routes/auth');
+
+// Import auth middleware
+const { verifyToken } = require('./auth');
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -79,6 +85,9 @@ app.get('/api/health', (req, res) => {
     uptime: process.uptime()
   });
 });
+
+// Auth routes
+app.use('/api/auth', authRoutes);
 
 // Example API routes
 app.get('/api/users', (req, res) => {
@@ -239,7 +248,7 @@ app.get('/api/agents/:id', async (req, res) => {
   }
 });
 
-app.post('/api/agents', (req, res) => {
+app.post('/api/agents', verifyToken, (req, res) => {
   upload.single('file')(req, res, async (err) => {
     try {
       // Handle multer errors
@@ -290,14 +299,15 @@ app.post('/api/agents', (req, res) => {
         });
       }
 
-      // Create agent data with file information
+      // Create agent data with file information and user association
       const agentData = {
         name: name.trim(),
         description: description.trim(),
         category: category.trim(),
         author_name: author_name.trim(),
         file_path: req.file.path,
-        file_size: req.file.size
+        file_size: req.file.size,
+        user_id: req.user.userId // Associate with authenticated user
       };
 
       // Save to database
@@ -313,8 +323,14 @@ app.post('/api/agents', (req, res) => {
           author_name: agent.author_name,
           file_path: agent.file_path,
           file_size: agent.file_size,
+          user_id: agent.user_id,
           download_count: 0,
           created_at: new Date().toISOString()
+        },
+        user: {
+          id: req.user.userId,
+          name: req.user.name,
+          email: req.user.email
         },
         file: {
           filename: req.file.filename,
