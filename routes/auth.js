@@ -114,17 +114,17 @@ router.post('/register', registerValidation, async (req, res) => {
       isVerified: false
     });
 
-    // Return success response
+    // Return success response without token (user must verify first)
     let responseMessage = 'User registered successfully.';
     let verificationUrl = null;
     
     if (emailResult.success) {
-      responseMessage += ' Please check your email to verify your account.';
+      responseMessage += ' Please check your email to verify your account before logging in.';
     } else {
       responseMessage += ' Email verification failed due to connection issues.';
       if (emailResult.verificationUrl) {
         verificationUrl = emailResult.verificationUrl;
-        responseMessage += ' You can manually verify your email using the provided link.';
+        responseMessage += ' You can manually verify your email using the provided link before logging in.';
       }
     }
     
@@ -137,9 +137,9 @@ router.post('/register', registerValidation, async (req, res) => {
         email: newUser.email,
         isVerified: false
       },
-      token: token,
       emailSent: emailResult.success,
-      verificationUrl: verificationUrl
+      verificationUrl: verificationUrl,
+      requiresVerification: true
     });
 
   } catch (error) {
@@ -200,23 +200,38 @@ router.post('/login', loginValidation, async (req, res) => {
       });
     }
 
-    // Generate JWT token
+    // Check if user is verified
+    if (user.is_verified !== 1) {
+      return res.status(403).json({
+        success: false,
+        message: 'Please verify your email address before logging in. Check your inbox for a verification link.',
+        requiresVerification: true,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          isVerified: false
+        }
+      });
+    }
+
+    // Generate JWT token (only for verified users)
     const token = generateToken({
       id: user.id,
       email: user.email,
       name: user.name,
-      isVerified: user.is_verified === 1
+      isVerified: true
     });
 
     // Return success response
     res.json({
       success: true,
-      message: user.is_verified === 1 ? 'Login successful' : 'Login successful. Please verify your email to upload agents.',
+      message: 'Login successful',
       user: {
         id: user.id,
         name: user.name,
         email: user.email,
-        isVerified: user.is_verified === 1
+        isVerified: true
       },
       token: token
     });

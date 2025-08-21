@@ -107,10 +107,12 @@ const Register: React.FC = () => {
       const result = await register(formData);
       setVerificationInfo(result);
       
-      // Don't navigate immediately if email failed - show verification info
-      if (result.emailSent) {
-        navigate('/', { replace: true });
-      }
+      // Always redirect to login after successful registration
+      // User must verify email before they can log in
+      navigate('/login', { 
+        replace: true,
+        state: { fromRegistration: true }
+      });
     } catch (error: any) {
       // Enhanced error handling
       console.error('Registration failed:', error);

@@ -152,24 +152,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Register function
-  const register = async (credentials: RegisterCredentials): Promise<{ verificationUrl?: string; emailSent: boolean }> => {
+  const register = async (credentials: RegisterCredentials): Promise<{ verificationUrl?: string; emailSent: boolean; requiresVerification: boolean }> => {
     try {
       dispatch({ type: 'AUTH_START' });
       
       const response = await authService.register(credentials);
       
-      // Store token in localStorage
-      localStorage.setItem('authToken', response.token);
-      
-      dispatch({
-        type: 'AUTH_SUCCESS',
-        payload: { user: response.user, token: response.token },
-      });
+      // Don't store token or set auth state - user must verify first
+      dispatch({ type: 'AUTH_FAILURE', payload: 'Please verify your email before logging in' });
 
       // Return verification info
       return {
         verificationUrl: response.verificationUrl,
-        emailSent: response.emailSent ?? false
+        emailSent: response.emailSent ?? false,
+        requiresVerification: response.requiresVerification ?? true
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Registration failed';
