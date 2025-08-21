@@ -3,21 +3,16 @@ const crypto = require('crypto');
 
 // Email configuration
 const emailConfig = {
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: process.env.SMTP_PORT || 587,
-  secure: false, // true for 465, false for other ports
+  host: process.env.SMTP_HOST,
+  port: parseInt(process.env.SMTP_PORT), // Should be 465
+  secure: process.env.SMTP_SECURE === 'true', // This converts string to boolean
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS
   },
-  // Add timeout to prevent hanging
-  connectionTimeout: 5000,  // 5 seconds
-  greetingTimeout: 5000,    // 5 seconds
-  socketTimeout: 5000,      // 5 seconds
-  // Add TLS options for better compatibility
-  tls: {
-    rejectUnauthorized: false
-  }
+  connectionTimeout: 60000,
+  greetingTimeout: 30000,
+  socketTimeout: 60000
 };
 
 // Create transporter
@@ -33,6 +28,7 @@ async function sendVerificationEmail(email, name, token, baseUrl) {
   console.log('Email configuration check:', {
     SMTP_HOST: process.env.SMTP_HOST,
     SMTP_PORT: process.env.SMTP_PORT,
+    SMTP_SECURE: process.env.SMTP_SECURE,
     SMTP_USER: process.env.SMTP_USER ? 'SET' : 'NOT SET',
     SMTP_PASS: process.env.SMTP_PASS ? 'SET' : 'NOT SET',
     BASE_URL: baseUrl

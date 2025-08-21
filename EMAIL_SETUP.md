@@ -13,7 +13,8 @@ JWT_EXPIRES_IN=24h
 
 # Email Configuration (for email verification)
 SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
+SMTP_PORT=465
+SMTP_SECURE=true
 SMTP_USER=your-email@gmail.com
 SMTP_PASS=your-app-password
 
@@ -35,19 +36,25 @@ NODE_ENV=development
    - Security → 2-Step Verification → App passwords
    - Generate a new app password for "Mail"
    - Use this password as `SMTP_PASS`
+3. **Use Secure SMTP**:
+   - Set `SMTP_PORT=465`
+   - Set `SMTP_SECURE=true`
+   - This uses SSL/TLS encryption for better security and reliability
 
 ## Other Email Providers
 
 ### Outlook/Hotmail
 ```bash
 SMTP_HOST=smtp-mail.outlook.com
-SMTP_PORT=587
+SMTP_PORT=465
+SMTP_SECURE=true
 ```
 
 ### Yahoo
 ```bash
 SMTP_HOST=smtp.mail.yahoo.com
-SMTP_PORT=587
+SMTP_PORT=465
+SMTP_SECURE=true
 ```
 
 ### Custom SMTP Server
