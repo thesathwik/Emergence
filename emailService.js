@@ -9,7 +9,11 @@ const emailConfig = {
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS
-  }
+  },
+  // Add timeout to prevent hanging
+  connectionTimeout: 10000, // 10 seconds
+  greetingTimeout: 10000,   // 10 seconds
+  socketTimeout: 10000      // 10 seconds
 };
 
 // Create transporter
@@ -22,6 +26,14 @@ function generateVerificationToken() {
 
 // Send verification email
 async function sendVerificationEmail(email, name, token, baseUrl) {
+  console.log('Email configuration check:', {
+    SMTP_HOST: process.env.SMTP_HOST,
+    SMTP_PORT: process.env.SMTP_PORT,
+    SMTP_USER: process.env.SMTP_USER ? 'SET' : 'NOT SET',
+    SMTP_PASS: process.env.SMTP_PASS ? 'SET' : 'NOT SET',
+    BASE_URL: baseUrl
+  });
+
   // Check if email configuration is set up
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
     console.warn('Email configuration not set up. Skipping email send.');
@@ -57,7 +69,7 @@ async function sendVerificationEmail(email, name, token, baseUrl) {
             please verify your email address by clicking the button below:
           </p>
           
-          <div style="text-center: center; margin: 30px 0;">
+          <div style="text-align: center; margin: 30px 0;">
             <a href="${verificationUrl}" 
                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
                       color: white; 
