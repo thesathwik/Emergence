@@ -83,16 +83,19 @@ const DeveloperHub: React.FC = () => {
                 </div>
 
                 <div className="text-center">
-                  <a 
-                    href="/agent-boilerplate.zip" 
-                    download
-                    className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors duration-200"
-                  >
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Download Boilerplate
-                  </a>
+                  <div className="relative group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
+                    <a 
+                      href="/agent-boilerplate.zip" 
+                      download
+                      className="relative inline-flex items-center justify-center px-6 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white font-medium shadow-xl hover:bg-white/20 hover:shadow-2xl transition-all duration-500"
+                    >
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Download Boilerplate
+                    </a>
+                  </div>
                 </div>
               </MarkdownContent>
             </div>
@@ -225,28 +228,31 @@ const DeveloperHub: React.FC = () => {
               <MarkdownContent>
                 <h1>Download Boilerplate</h1>
                 
-                <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center">
+                <div className="bg-gradient-to-br from-blue-50 via-purple-50 to-blue-100 border border-gray-200 rounded-2xl p-12 text-center">
                   <div className="max-w-lg mx-auto">
                     <div className="mb-8">
-                      <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                        <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-16 h-16 bg-white/50 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                        <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
                       </div>
                       <h2 className="text-2xl font-light text-gray-900 mb-3">Agent Boilerplate</h2>
-                      <p className="text-gray-600">Everything you need to build an agent with platform communication built-in</p>
+                      <p className="text-gray-700">Everything you need to build an agent with platform communication built-in</p>
                     </div>
                     
-                    <a 
-                      href="/agent-boilerplate.zip" 
-                      download
-                      className="inline-flex items-center justify-center px-8 py-4 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors duration-200"
-                    >
-                      <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      Download Template
-                    </a>
+                    <div className="relative group">
+                      <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-500"></div>
+                      <a 
+                        href="/agent-boilerplate.zip" 
+                        download
+                        className="relative inline-flex items-center justify-center px-8 py-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl text-white font-medium shadow-2xl hover:bg-white/20 hover:shadow-3xl transition-all duration-500"
+                      >
+                        <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Download Template
+                      </a>
+                    </div>
                   </div>
                 </div>
 
