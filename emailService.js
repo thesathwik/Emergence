@@ -4,15 +4,15 @@ const crypto = require('crypto');
 // Email configuration
 const emailConfig = {
   host: process.env.SMTP_HOST,
-  port: parseInt(process.env.SMTP_PORT), // Should be 465
+  port: parseInt(process.env.SMTP_PORT, 10), // Should be 465
   secure: process.env.SMTP_SECURE === 'true', // This converts string to boolean
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS
   },
-  connectionTimeout: 60000,
-  greetingTimeout: 30000,
-  socketTimeout: 60000
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 20000
 };
 
 // Create transporter
@@ -37,15 +37,15 @@ async function sendVerificationEmail(email, name, token, baseUrl) {
   // Check if email configuration is set up
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
     console.warn('Email configuration not set up. Skipping email send.');
-    console.log('Verification URL would be:', `${baseUrl}/api/auth/verify-email?token=${token}`);
-    return { 
-      success: false, 
+    console.log('Verification URL would be:', `${baseUrl}/verify-email?token=${token}`);
+    return {
+      success: false,
       message: 'Email configuration not set up',
-      verificationUrl: `${baseUrl}/api/auth/verify-email?token=${token}`
+      verificationUrl: `${baseUrl}/verify-email?token=${token}`
     };
   }
 
-  const verificationUrl = `${baseUrl}/api/auth/verify-email?token=${token}`;
+  const verificationUrl = `${baseUrl}/verify-email?token=${token}`;
   
   const mailOptions = {
     from: `"Emergence" <${process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER}>`,
@@ -110,6 +110,9 @@ async function sendVerificationEmail(email, name, token, baseUrl) {
 
   try {
     console.log('Attempting to send email...');
+    // Verify the connection before sending to surface configuration issues quickly
+    await transporter.verify();
+    console.log('SMTP connection verified. Sending email now...');
     const info = await transporter.sendMail(mailOptions);
     console.log('✅ Verification email sent successfully:', info.messageId);
     return { success: true, messageId: info.messageId };

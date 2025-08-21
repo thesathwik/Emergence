@@ -1,124 +1,45 @@
 import React, { useEffect, useState } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 const EmailVerificationPage: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const { login } = useAuth();
-  const [verificationStatus, setVerificationStatus] = useState<'loading' | 'success' | 'error'>('loading');
-  const [message, setMessage] = useState<string>('');
+  const navigate = useNavigate();
+  const [message, setMessage] = useState('Hold on while we verify your email...');
 
   useEffect(() => {
     const verifyEmail = async () => {
       const token = searchParams.get('token');
-      
+
       if (!token) {
-        setVerificationStatus('error');
-        setMessage('Invalid verification link. Please check your email and try again.');
+        setMessage('Invalid verification link. Redirecting to login...');
+        setTimeout(() => navigate('/login'), 1000);
         return;
       }
 
       try {
-        const response = await fetch(`/api/auth/verify-email?token=${token}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-
+        const response = await fetch(`/api/auth/verify-email?token=${token}`);
         const data = await response.json();
 
         if (response.ok && data.success) {
-          setVerificationStatus('success');
-          setMessage('Email verified successfully! You can now upload agents.');
+          setMessage('Verification complete. Redirecting to login...');
         } else {
-          setVerificationStatus('error');
-          setMessage(data.message || 'Verification failed. Please try again.');
+          setMessage((data.message || 'Verification failed.') + ' Redirecting to login...');
         }
       } catch (error) {
-        setVerificationStatus('error');
-        setMessage('An error occurred during verification. Please try again.');
+        setMessage('An error occurred during verification. Redirecting to login...');
+      } finally {
+        setTimeout(() => navigate('/login'), 1000);
       }
     };
 
     verifyEmail();
-  }, [searchParams]);
-
-  if (verificationStatus === 'loading') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full space-y-8">
-          <div className="text-center">
-            <LoadingSpinner size="lg" color="blue" text="Verifying your email..." />
-          </div>
-        </div>
-      </div>
-    );
-  }
+  }, [searchParams, navigate]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          {verificationStatus === 'success' ? (
-            <>
-              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
-                <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-                Email Verified!
-              </h2>
-              <p className="mt-2 text-sm text-gray-600">
-                {message}
-              </p>
-              <div className="mt-6 space-y-4">
-                <Link
-                  to="/upload"
-                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Upload Your First Agent
-                </Link>
-                <Link
-                  to="/"
-                  className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Browse Agents
-                </Link>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-                <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </div>
-              <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-                Verification Failed
-              </h2>
-              <p className="mt-2 text-sm text-gray-600">
-                {message}
-              </p>
-              <div className="mt-6 space-y-4">
-                <Link
-                  to="/login"
-                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Go to Login
-                </Link>
-                <Link
-                  to="/"
-                  className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Back to Home
-                </Link>
-              </div>
-            </>
-          )}
-        </div>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="max-w-md w-full text-center">
+        <LoadingSpinner size="lg" color="blue" text={message} />
       </div>
     </div>
   );
