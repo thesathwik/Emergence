@@ -16,6 +16,7 @@ const {
   generateVerificationToken, 
   sendVerificationEmail 
 } = require('../emailService');
+const { validateEmailForRegistration } = require('../emailValidation');
 
 // Rate limiting storage for registration attempts
 const registrationAttempts = {};
@@ -44,6 +45,15 @@ router.post('/register', registerValidation, async (req, res) => {
       return res.status(429).json({
         success: false,
         message: 'Too many registration attempts. Please try again later.'
+      });
+    }
+
+    // Validate email format and existence
+    const emailValidation = await validateEmailForRegistration(email);
+    if (!emailValidation.isValid) {
+      return res.status(400).json({
+        success: false,
+        message: emailValidation.reason || 'Invalid email address'
       });
     }
 
@@ -351,6 +361,15 @@ router.post('/resend-verification', async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Email is required'
+      });
+    }
+
+    // Validate email format
+    const emailValidation = await validateEmailForRegistration(email);
+    if (!emailValidation.isValid) {
+      return res.status(400).json({
+        success: false,
+        message: emailValidation.reason || 'Invalid email address'
       });
     }
 
