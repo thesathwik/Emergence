@@ -137,6 +137,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       const response = await authService.login(credentials);
       
+      // Check if token exists (it should for successful login)
+      if (!response.token) {
+        throw new Error('No authentication token received');
+      }
+      
       // Store token in localStorage
       localStorage.setItem('authToken', response.token);
       
