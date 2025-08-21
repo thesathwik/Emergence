@@ -169,7 +169,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Return verification info
       return {
         verificationUrl: response.verificationUrl,
-        emailSent: response.emailSent
+        emailSent: response.emailSent ?? false
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Registration failed';
