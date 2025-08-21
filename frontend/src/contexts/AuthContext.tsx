@@ -74,7 +74,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
 // Auth context interface
 interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
-  register: (credentials: RegisterCredentials) => Promise<void>;
+  register: (credentials: RegisterCredentials) => Promise<{ verificationUrl?: string; emailSent: boolean }>;
   logout: () => void;
   clearError: () => void;
   checkAuthStatus: () => Promise<void>;
@@ -152,7 +152,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Register function
-  const register = async (credentials: RegisterCredentials): Promise<void> => {
+  const register = async (credentials: RegisterCredentials): Promise<{ verificationUrl?: string; emailSent: boolean }> => {
     try {
       dispatch({ type: 'AUTH_START' });
       
@@ -165,6 +165,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         type: 'AUTH_SUCCESS',
         payload: { user: response.user, token: response.token },
       });
+
+      // Return verification info
+      return {
+        verificationUrl: response.verificationUrl,
+        emailSent: response.emailSent
+      };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Registration failed';
       dispatch({ type: 'AUTH_FAILURE', payload: errorMessage });

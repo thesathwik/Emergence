@@ -105,9 +105,18 @@ router.post('/register', registerValidation, async (req, res) => {
     });
 
     // Return success response
-    const responseMessage = emailResult.success 
-      ? 'User registered successfully. Please check your email to verify your account.'
-      : 'User registered successfully. Email verification not configured - please contact support.';
+    let responseMessage = 'User registered successfully.';
+    let verificationUrl = null;
+    
+    if (emailResult.success) {
+      responseMessage += ' Please check your email to verify your account.';
+    } else {
+      responseMessage += ' Email verification failed due to connection issues.';
+      if (emailResult.verificationUrl) {
+        verificationUrl = emailResult.verificationUrl;
+        responseMessage += ' You can manually verify your email using the provided link.';
+      }
+    }
     
     res.status(201).json({
       success: true,
@@ -119,7 +128,8 @@ router.post('/register', registerValidation, async (req, res) => {
         isVerified: false
       },
       token: token,
-      emailSent: emailResult.success
+      emailSent: emailResult.success,
+      verificationUrl: verificationUrl
     });
 
   } catch (error) {

@@ -91,6 +91,11 @@ const Register: React.FC = () => {
     }
   };
 
+  const [verificationInfo, setVerificationInfo] = useState<{
+    verificationUrl?: string;
+    emailSent: boolean;
+  } | null>(null);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -99,9 +104,13 @@ const Register: React.FC = () => {
     }
 
     try {
-      await register(formData);
-      // Navigate to home page after successful registration
-      navigate('/', { replace: true });
+      const result = await register(formData);
+      setVerificationInfo(result);
+      
+      // Don't navigate immediately if email failed - show verification info
+      if (result.emailSent) {
+        navigate('/', { replace: true });
+      }
     } catch (error: any) {
       // Enhanced error handling
       console.error('Registration failed:', error);
@@ -299,6 +308,35 @@ const Register: React.FC = () => {
                     <p className="text-sm text-red-800">
                       {validationErrors.general || error}
                     </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Verification Info */}
+            {verificationInfo && !verificationInfo.emailSent && verificationInfo.verificationUrl && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-yellow-800 mb-2">
+                      Email verification failed
+                    </p>
+                    <p className="text-sm text-yellow-700 mb-3">
+                      We couldn't send you a verification email due to connection issues. You can manually verify your account using the link below:
+                    </p>
+                    <a
+                      href={verificationInfo.verificationUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-yellow-800 bg-yellow-100 hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+                    >
+                      Verify Email Manually
+                    </a>
                   </div>
                 </div>
               </div>

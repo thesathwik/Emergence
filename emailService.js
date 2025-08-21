@@ -11,9 +11,13 @@ const emailConfig = {
     pass: process.env.SMTP_PASS
   },
   // Add timeout to prevent hanging
-  connectionTimeout: 10000, // 10 seconds
-  greetingTimeout: 10000,   // 10 seconds
-  socketTimeout: 10000      // 10 seconds
+  connectionTimeout: 5000,  // 5 seconds
+  greetingTimeout: 5000,    // 5 seconds
+  socketTimeout: 5000,      // 5 seconds
+  // Add TLS options for better compatibility
+  tls: {
+    rejectUnauthorized: false
+  }
 };
 
 // Create transporter
