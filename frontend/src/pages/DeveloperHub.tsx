@@ -82,36 +82,17 @@ const DeveloperHub: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-3xl blur-xl"></div>
-                  <div className="relative bg-white/80 backdrop-blur-sm border border-white/20 rounded-3xl p-8 shadow-2xl">
-                    <div className="text-center">
-                      <div className="mb-6">
-                        <div className="w-16 h-16 bg-gradient-to-br from-blue-500 via-purple-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg">
-                          <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                        </div>
-                      </div>
-                      <h3 className="text-xl font-light text-gray-900 mb-2">Get Started</h3>
-                      <p className="text-gray-600 mb-6">Download the complete agent template</p>
-                      <a 
-                        href="/agent-boilerplate.zip" 
-                        download
-                        className="group relative inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 ease-out transform hover:-translate-y-1 hover:scale-105 overflow-hidden"
-                      >
-                        <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-700 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        <div className="relative flex items-center space-x-3">
-                          <div className="w-6 h-6 bg-white/20 rounded-lg flex items-center justify-center group-hover:bg-white/30 transition-all duration-300">
-                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                          </div>
-                          <span>Download Template</span>
-                        </div>
-                      </a>
-                    </div>
-                  </div>
+                <div className="text-center">
+                  <a 
+                    href="/agent-boilerplate.zip" 
+                    download
+                    className="inline-flex items-center justify-center px-6 py-3 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors duration-200"
+                  >
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Download Boilerplate
+                  </a>
                 </div>
               </MarkdownContent>
             </div>
@@ -244,116 +225,83 @@ const DeveloperHub: React.FC = () => {
               <MarkdownContent>
                 <h1>Download Boilerplate</h1>
                 
-                <div className="relative overflow-hidden">
-                  {/* Animated background gradient */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-blue-600/5 animate-pulse"></div>
-                  
-                  {/* Floating particles effect */}
-                  <div className="absolute inset-0">
-                    <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-blue-400/30 rounded-full animate-bounce" style={{animationDelay: '0s'}}></div>
-                    <div className="absolute top-1/3 right-1/4 w-1 h-1 bg-purple-400/40 rounded-full animate-bounce" style={{animationDelay: '0.5s'}}></div>
-                    <div className="absolute bottom-1/4 left-1/3 w-1.5 h-1.5 bg-blue-500/20 rounded-full animate-bounce" style={{animationDelay: '1s'}}></div>
-                  </div>
-                  
-                  <div className="relative bg-white/90 backdrop-blur-md border border-white/30 rounded-3xl p-16 shadow-2xl">
-                    <div className="max-w-2xl mx-auto text-center">
-                      <div className="mb-12">
-                        {/* Animated icon container */}
-                        <div className="relative w-24 h-24 mx-auto mb-8">
-                          <div className="absolute inset-0 bg-gradient-to-br from-blue-500 via-purple-500 to-blue-600 rounded-3xl shadow-2xl animate-pulse"></div>
-                          <div className="absolute inset-2 bg-gradient-to-br from-blue-400 via-purple-400 to-blue-500 rounded-2xl flex items-center justify-center">
-                            <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                          </div>
-                        </div>
-                        
-                        <h2 className="text-4xl font-light text-gray-900 mb-4 tracking-tight">Agent Boilerplate</h2>
-                        <p className="text-gray-600 text-xl leading-relaxed max-w-lg mx-auto">Everything you need to build an agent with platform communication built-in</p>
+                <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center">
+                  <div className="max-w-lg mx-auto">
+                    <div className="mb-8">
+                      <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                        <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
                       </div>
-                      
-                      {/* Premium download button */}
-                      <div className="relative group">
-                        <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-purple-500 to-blue-600 rounded-3xl blur-lg opacity-75 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        <a 
-                          href="/agent-boilerplate.zip" 
-                          download
-                          className="relative inline-flex items-center justify-center px-12 py-6 bg-gradient-to-r from-blue-500 via-purple-500 to-blue-600 text-white font-medium rounded-3xl shadow-2xl hover:shadow-3xl transition-all duration-500 ease-out transform hover:-translate-y-2 hover:scale-105"
-                        >
-                          <div className="flex items-center space-x-4">
-                            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center group-hover:bg-white/30 transition-all duration-300">
-                              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                              </svg>
-                            </div>
-                            <span className="text-xl">Download Template</span>
-                          </div>
-                        </a>
-                      </div>
-                      
-                      {/* Subtle call-to-action */}
-                      <p className="text-gray-500 text-sm mt-6">Ready to start building? Download and get coding in minutes.</p>
+                      <h2 className="text-2xl font-light text-gray-900 mb-3">Agent Boilerplate</h2>
+                      <p className="text-gray-600">Everything you need to build an agent with platform communication built-in</p>
                     </div>
+                    
+                    <a 
+                      href="/agent-boilerplate.zip" 
+                      download
+                      className="inline-flex items-center justify-center px-8 py-4 bg-gray-900 text-white font-medium rounded-xl hover:bg-gray-800 transition-colors duration-200"
+                    >
+                      <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Download Template
+                    </a>
                   </div>
                 </div>
 
-                <div className="mt-16">
-                  <h3 className="text-2xl font-light text-gray-900 mb-8 text-center tracking-tight">What's Included</h3>
-                  <div className="grid md:grid-cols-2 gap-8">
-                    <div className="group relative bg-white/80 backdrop-blur-sm border border-white/30 rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-1">
-                      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                      <div className="relative flex items-start space-x-5">
-                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg group-hover:shadow-xl transition-shadow duration-500">
-                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="mt-12">
+                  <h3 className="text-lg font-medium text-gray-900 mb-6 text-center">What's Included</h3>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="bg-white border border-gray-200 rounded-xl p-6">
+                      <div className="flex items-start space-x-4">
+                        <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                           </svg>
                         </div>
                         <div>
-                          <h4 className="text-lg font-medium text-gray-900 mb-2">Platform Communication</h4>
-                          <p className="text-gray-600 leading-relaxed">Automatic registration and health checks</p>
-                          <p className="text-blue-600 text-sm mt-2 font-medium">Pre-configured for production</p>
+                          <h4 className="font-medium text-gray-900 mb-1">Platform Communication</h4>
+                          <p className="text-sm text-gray-600">Automatic registration and health checks</p>
                         </div>
                       </div>
                     </div>
-                    <div className="group relative bg-white/80 backdrop-blur-sm border border-white/30 rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-1">
-                      <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-blue-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                      <div className="relative flex items-start space-x-5">
-                        <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg group-hover:shadow-xl transition-shadow duration-500">
-                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="bg-white border border-gray-200 rounded-xl p-6">
+                      <div className="flex items-start space-x-4">
+                        <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                           </svg>
                         </div>
                         <div>
-                          <h4 className="text-lg font-medium text-gray-900 mb-2">Template Structure</h4>
-                          <p className="text-gray-600 leading-relaxed">All required files with correct format</p>
+                          <h4 className="font-medium text-gray-900 mb-1">Template Structure</h4>
+                          <p className="text-sm text-gray-600">All required files with correct format</p>
                         </div>
                       </div>
                     </div>
-                    <div className="group relative bg-white/80 backdrop-blur-sm border border-white/30 rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-1">
-                      <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-pink-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                      <div className="relative flex items-start space-x-5">
-                        <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg group-hover:shadow-xl transition-shadow duration-500">
-                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="bg-white border border-gray-200 rounded-xl p-6">
+                      <div className="flex items-start space-x-4">
+                        <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                           </svg>
                         </div>
                         <div>
-                          <h4 className="text-lg font-medium text-gray-900 mb-2">3-Step README</h4>
-                          <p className="text-gray-600 leading-relaxed">Simple setup instructions</p>
+                          <h4 className="font-medium text-gray-900 mb-1">3-Step README</h4>
+                          <p className="text-sm text-gray-600">Simple setup instructions</p>
                         </div>
                       </div>
                     </div>
-                    <div className="group relative bg-white/80 backdrop-blur-sm border border-white/30 rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-1">
-                      <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-red-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                      <div className="relative flex items-start space-x-5">
-                        <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg group-hover:shadow-xl transition-shadow duration-500">
-                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="bg-white border border-gray-200 rounded-xl p-6">
+                      <div className="flex items-start space-x-4">
+                        <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                         </div>
                         <div>
-                          <h4 className="text-lg font-medium text-gray-900 mb-2">Error Handling</h4>
-                          <p className="text-gray-600 leading-relaxed">Graceful error recovery and logging</p>
+                          <h4 className="font-medium text-gray-900 mb-1">Error Handling</h4>
+                          <p className="text-sm text-gray-600">Graceful error recovery and logging</p>
                         </div>
                       </div>
                     </div>
