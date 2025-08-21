@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import UploadForm from '../components/UploadForm';
+import EmailVerification from '../components/EmailVerification';
 import { useAuth } from '../contexts/AuthContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 
@@ -28,6 +29,7 @@ const UploadPage: React.FC = () => {
         <p className="text-gray-600">Share your AI agent with the community</p>
       </div>
       
+      <EmailVerification />
       <UploadForm />
     </div>
   );

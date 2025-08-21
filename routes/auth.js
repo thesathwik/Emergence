@@ -12,6 +12,10 @@ const {
   loginValidation,
   validateUniqueEmail 
 } = require('../authValidation');
+const { 
+  generateVerificationToken, 
+  sendVerificationEmail 
+} = require('../emailService');
 
 // Rate limiting storage for registration attempts
 const registrationAttempts = {};
@@ -73,21 +77,39 @@ router.post('/register', registerValidation, async (req, res) => {
     // Save user to database
     const newUser = await dbHelpers.createUser(userData);
 
-    // Generate JWT token
+    // Generate verification token
+    const verificationToken = generateVerificationToken();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours
+
+    // Save verification token to database
+    await dbHelpers.setVerificationToken(newUser.id, verificationToken, expiresAt);
+
+    // Send verification email
+    const baseUrl = process.env.BASE_URL || `http://${req.get('host')}`;
+    try {
+      await sendVerificationEmail(newUser.email, newUser.name, verificationToken, baseUrl);
+    } catch (emailError) {
+      console.error('Failed to send verification email:', emailError);
+      // Continue with registration even if email fails
+    }
+
+    // Generate JWT token (user will be unverified initially)
     const token = generateToken({
       id: newUser.id,
       email: newUser.email,
-      name: newUser.name
+      name: newUser.name,
+      isVerified: false
     });
 
     // Return success response
     res.status(201).json({
       success: true,
-      message: 'User registered successfully',
+      message: 'User registered successfully. Please check your email to verify your account.',
       user: {
         id: newUser.id,
         name: newUser.name,
-        email: newUser.email
+        email: newUser.email,
+        isVerified: false
       },
       token: token
     });
@@ -154,17 +176,19 @@ router.post('/login', loginValidation, async (req, res) => {
     const token = generateToken({
       id: user.id,
       email: user.email,
-      name: user.name
+      name: user.name,
+      isVerified: user.is_verified === 1
     });
 
     // Return success response
     res.json({
       success: true,
-      message: 'Login successful',
+      message: user.is_verified === 1 ? 'Login successful' : 'Login successful. Please verify your email to upload agents.',
       user: {
         id: user.id,
         name: user.name,
-        email: user.email
+        email: user.email,
+        isVerified: user.is_verified === 1
       },
       token: token
     });
@@ -235,6 +259,129 @@ router.get('/me', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to get profile',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+});
+
+/**
+ * GET /api/auth/verify-email
+ * Verify user email with token
+ */
+router.get('/verify-email', async (req, res) => {
+  try {
+    const { token } = req.query;
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: 'Verification token is required'
+      });
+    }
+
+    // Verify the token
+    const result = await dbHelpers.verifyUserEmail(token);
+
+    if (!result.verified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired verification token'
+      });
+    }
+
+    // Get the verified user
+    const user = await dbHelpers.getUserByVerificationToken(token);
+    
+    if (!user) {
+      // User was already verified or token was invalid
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired verification token'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Email verified successfully! You can now upload agents.',
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        isVerified: true
+      }
+    });
+
+  } catch (error) {
+    console.error('Email verification error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Email verification failed',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+});
+
+/**
+ * POST /api/auth/resend-verification
+ * Resend verification email
+ */
+router.post('/resend-verification', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required'
+      });
+    }
+
+    // Find user by email
+    const user = await dbHelpers.getUserByEmail(email);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    if (user.is_verified === 1) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is already verified'
+      });
+    }
+
+    // Generate new verification token
+    const verificationToken = generateVerificationToken();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours
+
+    // Update verification token in database
+    await dbHelpers.resendVerificationToken(user.id, verificationToken, expiresAt);
+
+    // Send verification email
+    const baseUrl = process.env.BASE_URL || `http://${req.get('host')}`;
+    try {
+      await sendVerificationEmail(user.email, user.name, verificationToken, baseUrl);
+    } catch (emailError) {
+      console.error('Failed to send verification email:', emailError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to send verification email'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Verification email sent successfully'
+    });
+
+  } catch (error) {
+    console.error('Resend verification error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to resend verification email',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
     });
   }

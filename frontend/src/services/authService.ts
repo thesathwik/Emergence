@@ -262,6 +262,29 @@ export const authService = {
       
       throw new Error(error instanceof Error ? error.message : 'Failed to delete account');
     }
+  },
+
+  /**
+   * Resend verification email
+   * @param email - User email address
+   * @returns Promise with success confirmation
+   */
+  resendVerification: async (email: string): Promise<{ success: boolean; message: string }> => {
+    try {
+      const response = await authApi.post<{ success: boolean; message: string }>('/resend-verification', {
+        email
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Resend verification error:', error);
+      
+      if (error instanceof AxiosError && error.response?.data) {
+        const errorData = error.response.data as AuthError;
+        throw new Error(errorData.message || 'Failed to resend verification email');
+      }
+      
+      throw new Error(error instanceof Error ? error.message : 'Failed to resend verification email');
+    }
   }
 };
 

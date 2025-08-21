@@ -9,7 +9,7 @@ const { db, dbHelpers, testConnection } = require('./database');
 const authRoutes = require('./routes/auth');
 
 // Import auth middleware
-const { verifyToken } = require('./auth');
+const { verifyToken, requireVerifiedEmail } = require('./auth');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -248,7 +248,7 @@ app.get('/api/agents/:id', async (req, res) => {
   }
 });
 
-app.post('/api/agents', verifyToken, (req, res) => {
+app.post('/api/agents', verifyToken, requireVerifiedEmail, (req, res) => {
   upload.single('file')(req, res, async (err) => {
     try {
       // Handle multer errors

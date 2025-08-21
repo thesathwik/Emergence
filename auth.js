@@ -176,6 +176,31 @@ const requireOwnership = (req, res, next) => {
 };
 
 /**
+ * Require verified email middleware
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next function
+ */
+const requireVerifiedEmail = (req, res, next) => {
+  if (!isAuthenticated(req)) {
+    return res.status(401).json({ 
+      success: false, 
+      message: 'Authentication required.' 
+    });
+  }
+
+  // Check if user is verified (this will be set in the token during login)
+  if (!req.user.isVerified) {
+    return res.status(403).json({ 
+      success: false, 
+      message: 'Email verification required. Please check your email and verify your account before uploading agents.' 
+    });
+  }
+  
+  next();
+};
+
+/**
  * Rate limiting helper for authentication attempts
  * @param {Object} attempts - Object to store attempt counts
  * @param {string} key - Key to track (usually IP or email)
@@ -257,6 +282,7 @@ module.exports = {
   isOwner,
   requireAuth,
   requireOwnership,
+  requireVerifiedEmail,
   
   // Rate Limiting
   checkRateLimit,

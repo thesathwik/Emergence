@@ -17,12 +17,15 @@ const db = new sqlite3.Database(DB_PATH, (err) => {
 // Initialize database tables
 function initializeDatabase() {
   db.serialize(() => {
-    // Create users table with password_hash
+    // Create users table with password_hash and email verification fields
     db.run(`CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       email TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
       name TEXT NOT NULL,
+      is_verified BOOLEAN DEFAULT 0,
+      verification_token TEXT,
+      token_expires_at DATETIME,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`, (err) => {
       if (err) {
@@ -92,9 +95,10 @@ function migrateUsersTable() {
         return;
       }
       
-      const hasPasswordHash = columns.some(col => col.name === 'password_hash');
+      const columnNames = columns.map(col => col.name);
       
-      if (!hasPasswordHash) {
+      // Add password_hash column if it doesn't exist
+      if (!columnNames.includes('password_hash')) {
         console.log('Adding password_hash column to users table...');
         db.run('ALTER TABLE users ADD COLUMN password_hash TEXT', (err) => {
           if (err) {
@@ -105,6 +109,46 @@ function migrateUsersTable() {
         });
       } else {
         console.log('password_hash column already exists in users table.');
+      }
+      
+      // Add email verification columns if they don't exist
+      if (!columnNames.includes('is_verified')) {
+        console.log('Adding is_verified column to users table...');
+        db.run('ALTER TABLE users ADD COLUMN is_verified BOOLEAN DEFAULT 0', (err) => {
+          if (err) {
+            console.error('Error adding is_verified column:', err.message);
+          } else {
+            console.log('Successfully added is_verified column to users table.');
+          }
+        });
+      } else {
+        console.log('is_verified column already exists in users table.');
+      }
+      
+      if (!columnNames.includes('verification_token')) {
+        console.log('Adding verification_token column to users table...');
+        db.run('ALTER TABLE users ADD COLUMN verification_token TEXT', (err) => {
+          if (err) {
+            console.error('Error adding verification_token column:', err.message);
+          } else {
+            console.log('Successfully added verification_token column to users table.');
+          }
+        });
+      } else {
+        console.log('verification_token column already exists in users table.');
+      }
+      
+      if (!columnNames.includes('token_expires_at')) {
+        console.log('Adding token_expires_at column to users table...');
+        db.run('ALTER TABLE users ADD COLUMN token_expires_at DATETIME', (err) => {
+          if (err) {
+            console.error('Error adding token_expires_at column:', err.message);
+          } else {
+            console.log('Successfully added token_expires_at column to users table.');
+          }
+        });
+      } else {
+        console.log('token_expires_at column already exists in users table.');
       }
     });
   });
@@ -421,6 +465,75 @@ const dbHelpers = {
       db.run(
         'UPDATE users SET password_hash = ? WHERE id = ?',
         [password_hash, id],
+        function(err) {
+          if (err) {
+            reject(err);
+          } else {
+            resolve({ updated: this.changes > 0 });
+          }
+        }
+      );
+    });
+  },
+
+  // Email verification methods
+  // Set verification token for user
+  setVerificationToken: (userId, token, expiresAt) => {
+    return new Promise((resolve, reject) => {
+      db.run(
+        'UPDATE users SET verification_token = ?, token_expires_at = ? WHERE id = ?',
+        [token, expiresAt, userId],
+        function(err) {
+          if (err) {
+            reject(err);
+          } else {
+            resolve({ updated: this.changes > 0 });
+          }
+        }
+      );
+    });
+  },
+
+  // Verify user email
+  verifyUserEmail: (token) => {
+    return new Promise((resolve, reject) => {
+      db.run(
+        'UPDATE users SET is_verified = 1, verification_token = NULL, token_expires_at = NULL WHERE verification_token = ? AND token_expires_at > datetime("now")',
+        [token],
+        function(err) {
+          if (err) {
+            reject(err);
+          } else {
+            resolve({ verified: this.changes > 0 });
+          }
+        }
+      );
+    });
+  },
+
+  // Get user by verification token
+  getUserByVerificationToken: (token) => {
+    return new Promise((resolve, reject) => {
+      db.get(
+        'SELECT * FROM users WHERE verification_token = ? AND token_expires_at > datetime("now")',
+        [token],
+        (err, row) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(row);
+          }
+        }
+      );
+    });
+  },
+
+  // Resend verification email (update token and expiry)
+  resendVerificationToken: (userId, token, expiresAt) => {
+    return new Promise((resolve, reject) => {
+      db.run(
+        'UPDATE users SET verification_token = ?, token_expires_at = ? WHERE id = ? AND is_verified = 0',
+        [token, expiresAt, userId],
         function(err) {
           if (err) {
             reject(err);

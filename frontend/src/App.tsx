@@ -13,6 +13,7 @@ import Login from './components/Login';
 import Register from './components/Register';
 import ProtectedRoute from './components/ProtectedRoute';
 import NotFoundPage from './pages/NotFoundPage';
+import EmailVerificationPage from './pages/EmailVerificationPage';
 
 
 
@@ -34,6 +35,7 @@ function App() {
                   <Register />
                 </ProtectedRoute>
               } />
+              <Route path="/verify-email" element={<EmailVerificationPage />} />
               <Route path="/upload" element={
                 <ProtectedRoute requireAuth={true}>
                   <UploadPage />
