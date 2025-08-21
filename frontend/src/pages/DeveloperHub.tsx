@@ -82,20 +82,30 @@ const DeveloperHub: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-                  <div className="text-center">
-                    <h3 className="text-lg font-semibold text-blue-800 mb-2">Ready to start?</h3>
-                    <a 
-                      href="/agent-boilerplate.zip" 
-                      download
-                      className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors duration-200"
-                    >
-                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                      </svg>
-                      📥 Download agent-boilerplate.zip
-                    </a>
-                  </div>
+                <div className="text-center">
+                  <a 
+                    href="/agent-boilerplate.zip" 
+                    download
+                    className="group inline-flex items-center justify-center w-full max-w-sm mx-auto px-8 py-4 bg-white border-2 border-gray-200 rounded-2xl shadow-sm hover:shadow-lg hover:border-gray-300 transition-all duration-300 ease-out transform hover:-translate-y-0.5"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="flex-shrink-0">
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow duration-300">
+                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+                      </div>
+                      <div className="text-left">
+                        <div className="text-sm font-medium text-gray-900 group-hover:text-gray-700 transition-colors duration-200">
+                          Download Boilerplate
+                        </div>
+                        <div className="text-xs text-gray-500 group-hover:text-gray-600 transition-colors duration-200">
+                          Ready-to-use template
+                        </div>
+                      </div>
+                    </div>
+                  </a>
                 </div>
               </MarkdownContent>
             </div>
@@ -228,48 +238,90 @@ const DeveloperHub: React.FC = () => {
               <MarkdownContent>
                 <h1>Download Boilerplate</h1>
                 
-                <div className="bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-xl p-8 text-center">
-                  <div className="max-w-md mx-auto">
-                    <div className="mb-6">
-                      <svg className="w-16 h-16 text-blue-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                      </svg>
-                      <h2 className="text-2xl font-bold text-gray-900 mb-2">Ready-to-use Template</h2>
-                      <p className="text-gray-600">Everything you need to build an agent with platform communication built-in</p>
+                <div className="bg-white border border-gray-100 rounded-3xl p-12 text-center shadow-sm">
+                  <div className="max-w-lg mx-auto">
+                    <div className="mb-8">
+                      <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                        <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <h2 className="text-3xl font-light text-gray-900 mb-3">Agent Boilerplate</h2>
+                      <p className="text-gray-600 text-lg leading-relaxed">Everything you need to build an agent with platform communication built-in</p>
                     </div>
                     
                     <a 
                       href="/agent-boilerplate.zip" 
                       download
-                      className="inline-flex items-center px-8 py-4 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                      className="group inline-flex items-center justify-center px-10 py-5 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 ease-out transform hover:-translate-y-1 hover:scale-105"
                     >
-                      <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                      </svg>
-                      📥 Download agent-boilerplate.zip
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center group-hover:bg-opacity-30 transition-all duration-300">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+                        <span className="text-lg">Download Template</span>
+                      </div>
                     </a>
                   </div>
                 </div>
 
-                <div className="mt-8">
-                  <h3 className="text-lg font-semibold mb-4">What's Included</h3>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <h4 className="font-semibold text-gray-900 mb-2">✅ Platform Communication</h4>
-                      <p className="text-sm text-gray-600">Automatic registration and health checks</p>
-                      <p className="text-xs text-gray-500 mt-1">Pre-configured for https://emergence-production.up.railway.app</p>
+                <div className="mt-12">
+                  <h3 className="text-xl font-light text-gray-900 mb-6 text-center">What's Included</h3>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+                      <div className="flex items-start space-x-4">
+                        <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-gray-900 mb-1">Platform Communication</h4>
+                          <p className="text-sm text-gray-600">Automatic registration and health checks</p>
+                          <p className="text-xs text-blue-600 mt-1">Pre-configured for production</p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <h4 className="font-semibold text-gray-900 mb-2">✅ Template Structure</h4>
-                      <p className="text-sm text-gray-600">All required files with correct format</p>
+                    <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+                      <div className="flex items-start space-x-4">
+                        <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                          </svg>
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-gray-900 mb-1">Template Structure</h4>
+                          <p className="text-sm text-gray-600">All required files with correct format</p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <h4 className="font-semibold text-gray-900 mb-2">✅ 3-Step README</h4>
-                      <p className="text-sm text-gray-600">Simple setup instructions</p>
+                    <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+                      <div className="flex items-start space-x-4">
+                        <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-gray-900 mb-1">3-Step README</h4>
+                          <p className="text-sm text-gray-600">Simple setup instructions</p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <h4 className="font-semibold text-gray-900 mb-2">✅ Error Handling</h4>
-                      <p className="text-sm text-gray-600">Graceful error recovery and logging</p>
+                    <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+                      <div className="flex items-start space-x-4">
+                        <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <svg className="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-gray-900 mb-1">Error Handling</h4>
+                          <p className="text-sm text-gray-600">Graceful error recovery and logging</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
