@@ -86,11 +86,14 @@ router.post('/register', registerValidation, async (req, res) => {
 
     // Send verification email
     const baseUrl = process.env.BASE_URL || `http://${req.get('host')}`;
-    try {
-      await sendVerificationEmail(newUser.email, newUser.name, verificationToken, baseUrl);
-    } catch (emailError) {
-      console.error('Failed to send verification email:', emailError);
-      // Continue with registration even if email fails
+    const emailResult = await sendVerificationEmail(newUser.email, newUser.name, verificationToken, baseUrl);
+    
+    if (!emailResult.success) {
+      console.warn('Email verification not sent:', emailResult.message);
+      // Log the verification URL for manual verification if needed
+      if (emailResult.verificationUrl) {
+        console.log('Manual verification URL:', emailResult.verificationUrl);
+      }
     }
 
     // Generate JWT token (user will be unverified initially)
@@ -102,16 +105,21 @@ router.post('/register', registerValidation, async (req, res) => {
     });
 
     // Return success response
+    const responseMessage = emailResult.success 
+      ? 'User registered successfully. Please check your email to verify your account.'
+      : 'User registered successfully. Email verification not configured - please contact support.';
+    
     res.status(201).json({
       success: true,
-      message: 'User registered successfully. Please check your email to verify your account.',
+      message: responseMessage,
       user: {
         id: newUser.id,
         name: newUser.name,
         email: newUser.email,
         isVerified: false
       },
-      token: token
+      token: token,
+      emailSent: emailResult.success
     });
 
   } catch (error) {
@@ -362,13 +370,13 @@ router.post('/resend-verification', async (req, res) => {
 
     // Send verification email
     const baseUrl = process.env.BASE_URL || `http://${req.get('host')}`;
-    try {
-      await sendVerificationEmail(user.email, user.name, verificationToken, baseUrl);
-    } catch (emailError) {
-      console.error('Failed to send verification email:', emailError);
+    const emailResult = await sendVerificationEmail(user.email, user.name, verificationToken, baseUrl);
+    
+    if (!emailResult.success) {
+      console.warn('Email verification not sent:', emailResult.message);
       return res.status(500).json({
         success: false,
-        message: 'Failed to send verification email'
+        message: 'Email verification not configured. Please contact support.'
       });
     }
 

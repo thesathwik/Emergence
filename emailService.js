@@ -22,6 +22,17 @@ function generateVerificationToken() {
 
 // Send verification email
 async function sendVerificationEmail(email, name, token, baseUrl) {
+  // Check if email configuration is set up
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    console.warn('Email configuration not set up. Skipping email send.');
+    console.log('Verification URL would be:', `${baseUrl}/api/auth/verify-email?token=${token}`);
+    return { 
+      success: false, 
+      message: 'Email configuration not set up',
+      verificationUrl: `${baseUrl}/api/auth/verify-email?token=${token}`
+    };
+  }
+
   const verificationUrl = `${baseUrl}/api/auth/verify-email?token=${token}`;
   
   const mailOptions = {
@@ -46,7 +57,7 @@ async function sendVerificationEmail(email, name, token, baseUrl) {
             please verify your email address by clicking the button below:
           </p>
           
-          <div style="text-align: center; margin: 30px 0;">
+          <div style="text-center: center; margin: 30px 0;">
             <a href="${verificationUrl}" 
                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
                       color: white; 
@@ -91,7 +102,13 @@ async function sendVerificationEmail(email, name, token, baseUrl) {
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('Error sending verification email:', error);
-    throw error;
+    // Return a more graceful error response
+    return { 
+      success: false, 
+      message: 'Failed to send verification email',
+      error: error.message,
+      verificationUrl: verificationUrl
+    };
   }
 }
 
