@@ -56,30 +56,21 @@ const DeveloperHub: React.FC = () => {
                 
                 <h2>Quick Start</h2>
                 <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
-                  <div className="flex items-start space-x-4">
-                    <div className="flex-shrink-0">
-                      <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-semibold text-green-800 mb-3">3 Steps to Get Started</h3>
-                      <ol className="space-y-2 text-green-700">
-                        <li className="flex items-center">
-                          <span className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3">1</span>
-                          <a href="#download" className="underline font-medium">Download Boilerplate</a>
-                        </li>
-                        <li className="flex items-center">
-                          <span className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3">2</span>
-                          Edit <code className="bg-green-100 px-2 py-1 rounded">src/agent_core.py</code> with your logic
-                        </li>
-                        <li className="flex items-center">
-                          <span className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3">3</span>
-                          Zip and upload to marketplace
-                        </li>
-                      </ol>
-                    </div>
-                  </div>
+                  <h3 className="text-xl font-semibold text-green-800 mb-3">3 Steps to Get Started</h3>
+                  <ol className="space-y-2 text-green-700">
+                    <li className="flex items-center">
+                      <span className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3">1</span>
+                      <a href="#download" className="underline font-medium">Download Boilerplate</a>
+                    </li>
+                    <li className="flex items-center">
+                      <span className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3">2</span>
+                      Edit <code className="bg-green-100 px-2 py-1 rounded">src/agent_core.py</code> with your logic
+                    </li>
+                    <li className="flex items-center">
+                      <span className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3">3</span>
+                      Zip and upload to marketplace
+                    </li>
+                  </ol>
                 </div>
 
                 <div className="text-center">
@@ -228,31 +219,24 @@ const DeveloperHub: React.FC = () => {
               <MarkdownContent>
                 <h1>Download Boilerplate</h1>
                 
-                <div className="bg-gradient-to-br from-blue-50 via-purple-50 to-blue-100 border border-gray-200 rounded-2xl p-12 text-center">
-                  <div className="max-w-lg mx-auto">
-                    <div className="mb-8">
-                      <div className="w-16 h-16 bg-white/50 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                        <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                      </div>
-                      <h2 className="text-2xl font-light text-gray-900 mb-3">Agent Boilerplate</h2>
-                      <p className="text-gray-700">Everything you need to build an agent with platform communication built-in</p>
-                    </div>
-                    
-                    <div className="relative group">
-                      <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-500"></div>
-                      <a 
-                        href="/agent-boilerplate.zip" 
-                        download
-                        className="relative inline-flex items-center justify-center px-8 py-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl text-white font-medium shadow-2xl hover:bg-white/20 hover:shadow-3xl transition-all duration-500"
-                      >
-                        <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        Download Template
-                      </a>
-                    </div>
+                <div className="text-center">
+                  <div className="mb-8">
+                    <h2 className="text-2xl font-light text-gray-900 mb-3">Agent Boilerplate</h2>
+                    <p className="text-gray-600">Everything you need to build an agent with platform communication built-in</p>
+                  </div>
+                  
+                  <div className="relative group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-500"></div>
+                    <a 
+                      href="/agent-boilerplate.zip" 
+                      download
+                      className="relative inline-flex items-center justify-center px-8 py-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl text-white font-medium shadow-2xl hover:bg-white/20 hover:shadow-3xl transition-all duration-500"
+                    >
+                      <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Download Template
+                    </a>
                   </div>
                 </div>
 
