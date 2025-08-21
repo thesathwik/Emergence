@@ -37,15 +37,15 @@ async function sendVerificationEmail(email, name, token, baseUrl) {
   // Check if email configuration is set up
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
     console.warn('Email configuration not set up. Skipping email send.');
-    console.log('Verification URL would be:', `${baseUrl}/api/auth/verify-email?token=${token}`);
-    return { 
-      success: false, 
+    console.log('Verification URL would be:', `${baseUrl}/verify-email?token=${token}`);
+    return {
+      success: false,
       message: 'Email configuration not set up',
-      verificationUrl: `${baseUrl}/api/auth/verify-email?token=${token}`
+      verificationUrl: `${baseUrl}/verify-email?token=${token}`
     };
   }
 
-  const verificationUrl = `${baseUrl}/api/auth/verify-email?token=${token}`;
+  const verificationUrl = `${baseUrl}/verify-email?token=${token}`;
   
   const mailOptions = {
     from: `"Emergence" <${process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER}>`,

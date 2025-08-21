@@ -14,7 +14,8 @@ const EmailVerificationPage: React.FC = () => {
       
       if (!token) {
         setVerificationStatus('error');
-        setMessage('Invalid verification link. Please check your email and try again.');
+        setMessage('Invalid verification link. Redirecting to login...');
+        setTimeout(() => navigate('/login'), 3000);
         return;
       }
 
@@ -34,11 +35,13 @@ const EmailVerificationPage: React.FC = () => {
           setTimeout(() => navigate('/login'), 3000);
         } else {
           setVerificationStatus('error');
-          setMessage(data.message || 'Verification failed. Please try again.');
+          setMessage((data.message || 'Verification failed.') + ' Redirecting to login...');
+          setTimeout(() => navigate('/login'), 3000);
         }
       } catch (error) {
         setVerificationStatus('error');
-        setMessage('An error occurred during verification. Please try again.');
+        setMessage('An error occurred during verification. Redirecting to login...');
+        setTimeout(() => navigate('/login'), 3000);
       }
     };
 
