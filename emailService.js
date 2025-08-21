@@ -113,11 +113,18 @@ async function sendVerificationEmail(email, name, token, baseUrl) {
   };
 
   try {
+    console.log('Attempting to send email...');
     const info = await transporter.sendMail(mailOptions);
-    console.log('Verification email sent:', info.messageId);
+    console.log('✅ Verification email sent successfully:', info.messageId);
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error('Error sending verification email:', error);
+    console.error('❌ Error sending verification email:', error);
+    console.error('Error details:', {
+      code: error.code,
+      command: error.command,
+      response: error.response,
+      responseCode: error.responseCode
+    });
     // Return a more graceful error response
     return { 
       success: false, 
