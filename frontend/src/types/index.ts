@@ -85,9 +85,10 @@ export interface AuthResponse {
   success: boolean;
   message: string;
   user: User;
-  token: string;
+  token?: string;
   emailSent?: boolean;
   verificationUrl?: string;
+  requiresVerification?: boolean;
 }
 
 export interface AuthError {
