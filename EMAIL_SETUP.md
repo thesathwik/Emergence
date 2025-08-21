@@ -17,6 +17,9 @@ SMTP_PORT=587
 SMTP_USER=your-email@gmail.com
 SMTP_PASS=your-app-password
 
+# Sender Email (optional - defaults to SMTP_USER if not set)
+SMTP_FROM_EMAIL=noreply@yourdomain.com
+
 # Base URL for email verification links
 BASE_URL=http://localhost:3001
 

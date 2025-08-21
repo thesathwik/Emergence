@@ -142,12 +142,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw new Error('No authentication token received');
       }
       
+      const token = response.token; // TypeScript now knows this is a string
+      
       // Store token in localStorage
-      localStorage.setItem('authToken', response.token);
+      localStorage.setItem('authToken', token);
       
       dispatch({
         type: 'AUTH_SUCCESS',
-        payload: { user: response.user, token: response.token },
+        payload: { user: response.user, token: token },
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Login failed';
