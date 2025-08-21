@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { Agent } from '../types';
 import { formatFileSize, formatDate, formatNumber } from '../utils/formatters';
 import { apiService } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
+import LoadingSpinner from './LoadingSpinner';
 
 interface AgentCardProps {
   agent: Agent;
@@ -15,6 +17,10 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, className = '', onDownload
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const { user } = useAuth();
+  
+  // Check if this agent belongs to the current user
+  const isUserAgent = user && agent.user_id && user.id === agent.user_id;
 
   // Truncate description to specified length
   const truncateDescription = (text: string, maxLength: number = 120): string => {
@@ -94,7 +100,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, className = '', onDownload
     >
       <div className="bg-white/60 backdrop-blur-sm rounded-3xl border border-gray-100/50 hover:border-gray-200/50 transition-all duration-300 overflow-hidden h-full flex flex-col hover:shadow-xl hover:shadow-gray-200/50 hover:-translate-y-1">
                   {/* Card Header */}
-          <div className="p-8 flex-1 flex flex-col">
+          <div className="p-4 sm:p-6 lg:p-8 flex-1 flex flex-col">
             {/* Title and Category */}
             <div className="flex flex-col mb-6">
               <div className="flex items-start justify-between mb-2">
@@ -102,7 +108,16 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, className = '', onDownload
                   {agent.name}
                 </h3>
               </div>
-              <div className="flex justify-end">
+              <div className="flex justify-end items-center space-x-2">
+                {/* Your Agent Badge */}
+                {isUserAgent && (
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+                    <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Your Agent
+                  </span>
+                )}
                 <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-light border ${getCategoryBadgeColors(agent.category)}`}>
                   {agent.category}
                 </span>
@@ -130,7 +145,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, className = '', onDownload
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-6 pt-6 border-t border-gray-50/50">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4 lg:gap-6 pt-6 border-t border-gray-50/50">
             <div className="text-center">
               <div className="flex items-center justify-center mb-2">
                 <svg className="w-4 h-4 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -164,7 +179,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, className = '', onDownload
         </div>
 
         {/* Card Footer with Download Button and Hover Action */}
-        <div className="bg-gray-50/50 px-8 py-4 border-t border-gray-100/50 group-hover:bg-gray-50/80 transition-all duration-300">
+        <div className="bg-gray-50/50 px-4 sm:px-6 lg:px-8 py-4 border-t border-gray-100/50 group-hover:bg-gray-50/80 transition-all duration-300">
           <div className="flex items-center justify-between">
             <span className="text-sm text-gray-500 group-hover:text-gray-700 transition-colors duration-200 font-light">
               View Details
@@ -179,8 +194,10 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, className = '', onDownload
               >
                 {downloading ? (
                   <>
-                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
-                    {downloadProgress > 0 ? `${Math.round(downloadProgress)}%` : '...'}
+                    <LoadingSpinner size="sm" color="white" />
+                    <span className="ml-1">
+                      {downloadProgress > 0 ? `${Math.round(downloadProgress)}%` : '...'}
+                    </span>
                   </>
                 ) : downloadSuccess ? (
                   <>
@@ -224,6 +241,10 @@ export const AgentCardCompact: React.FC<AgentCardProps> = ({ agent, className = 
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const { user } = useAuth();
+  
+  // Check if this agent belongs to the current user
+  const isUserAgent = user && agent.user_id && user.id === agent.user_id;
 
   const handleDownload = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -296,7 +317,7 @@ export const AgentCardCompact: React.FC<AgentCardProps> = ({ agent, className = 
       to={`/agents/${agent.id}`}
       className={`block group ${className}`}
     >
-      <div className="bg-white/60 backdrop-blur-sm rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100/50 hover:border-gray-200/50 p-6 hover:-translate-y-1">
+      <div className="bg-white/60 backdrop-blur-sm rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100/50 hover:border-gray-200/50 p-4 sm:p-6 hover:-translate-y-1">
         <div className="flex items-start space-x-4">
           {/* Avatar */}
           <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center shrink-0">
@@ -313,7 +334,16 @@ export const AgentCardCompact: React.FC<AgentCardProps> = ({ agent, className = 
                   {agent.name}
                 </h3>
               </div>
-              <div className="flex justify-end">
+              <div className="flex justify-end items-center space-x-2">
+                {/* Your Agent Badge */}
+                {isUserAgent && (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+                    <svg className="w-2.5 h-2.5 mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Yours
+                  </span>
+                )}
                 <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-light ${getCategoryBadgeColors(agent.category)}`}>
                   {agent.category}
                 </span>
@@ -336,12 +366,14 @@ export const AgentCardCompact: React.FC<AgentCardProps> = ({ agent, className = 
                     className="flex items-center px-2 py-1 text-xs font-light rounded-xl text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-1 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                     title="Download Agent"
                   >
-                    {downloading ? (
-                      <>
-                        <div className="animate-spin rounded-full h-2 w-2 border-b border-white mr-1"></div>
+                                      {downloading ? (
+                    <>
+                      <LoadingSpinner size="sm" color="white" />
+                      <span className="ml-1">
                         {downloadProgress > 0 ? `${Math.round(downloadProgress)}%` : '...'}
-                      </>
-                    ) : downloadSuccess ? (
+                      </span>
+                    </>
+                  ) : downloadSuccess ? (
                       <>
                         <svg className="w-2 h-2 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />

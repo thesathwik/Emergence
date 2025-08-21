@@ -5,6 +5,8 @@ import { Agent, AgentsResponse } from '../types';
 import AgentCard, { AgentCardCompact } from '../components/AgentCard';
 import CategoryFilter from '../components/CategoryFilter';
 import { useCategoryCounts } from '../hooks/useCategoryCounts';
+import { useAuth } from '../contexts/AuthContext';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const BrowseAgentsPage: React.FC = () => {
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -14,7 +16,9 @@ const BrowseAgentsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [sortBy, setSortBy] = useState<'name' | 'downloads' | 'date'>('date');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [showMyAgents, setShowMyAgents] = useState(false);
   const { categoryCounts, updateCategoryCounts } = useCategoryCounts();
+  const { user, isAuthenticated } = useAuth();
 
   const fetchAgents = useCallback(async (category?: string) => {
     setLoading(true);
@@ -49,10 +53,9 @@ const BrowseAgentsPage: React.FC = () => {
     setSelectedCategory('');
     setSearchTerm('');
     setSortBy('date');
+    setShowMyAgents(false);
     fetchAgents();
   };
-
-
 
   const handleSearch = async () => {
     if (!searchTerm.trim()) {
@@ -74,8 +77,6 @@ const BrowseAgentsPage: React.FC = () => {
     }
   };
 
-
-
   const sortAgents = (agentsToSort: Agent[]) => {
     return [...agentsToSort].sort((a, b) => {
       switch (sortBy) {
@@ -91,7 +92,15 @@ const BrowseAgentsPage: React.FC = () => {
     });
   };
 
-  const filteredAndSortedAgents = sortAgents(agents);
+  // Filter agents based on user selection
+  const filteredAgents = agents.filter(agent => {
+    if (showMyAgents && user) {
+      return agent.user_id === user.id;
+    }
+    return true;
+  });
+
+  const filteredAndSortedAgents = sortAgents(filteredAgents);
 
   return (
     <div>
@@ -103,9 +112,41 @@ const BrowseAgentsPage: React.FC = () => {
 
       {/* Filters and Search */}
       <div className="bg-white shadow rounded-lg p-6 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* User Stats (if authenticated) */}
+        {isAuthenticated && user && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center">
+                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-blue-900">Welcome back, {user.name}!</p>
+                    <p className="text-xs text-blue-700">
+                      You have uploaded {agents.filter(agent => agent.user_id === user.id).length} agent{agents.filter(agent => agent.user_id === user.id).length !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <Link
+                to="/upload"
+                className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Upload New Agent
+              </Link>
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Search */}
-          <div className="md:col-span-2">
+          <div className="sm:col-span-2">
             <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">
               Search Agents
             </label>
@@ -116,7 +157,7 @@ const BrowseAgentsPage: React.FC = () => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Search by name, description, or author..."
               />
               <button
@@ -152,7 +193,7 @@ const BrowseAgentsPage: React.FC = () => {
               id="sort"
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as 'name' | 'downloads' | 'date')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="date">Date Created</option>
               <option value="name">Name</option>
@@ -161,8 +202,27 @@ const BrowseAgentsPage: React.FC = () => {
           </div>
         </div>
 
+        {/* My Agents Filter (for authenticated users) */}
+        {isAuthenticated && (
+          <div className="mt-4">
+            <div className="flex items-center space-x-4">
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={showMyAgents}
+                  onChange={(e) => setShowMyAgents(e.target.checked)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <span className="ml-2 text-sm font-medium text-gray-700">
+                  Show only my agents ({agents.filter(agent => agent.user_id === user?.id).length})
+                </span>
+              </label>
+            </div>
+          </div>
+        )}
+
         {/* Active Filters Display */}
-        {(selectedCategory || searchTerm) && (
+        {(selectedCategory || searchTerm || showMyAgents) && (
           <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
@@ -199,6 +259,19 @@ const BrowseAgentsPage: React.FC = () => {
                       </button>
                     </span>
                   )}
+                  {showMyAgents && (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                      My Agents Only
+                      <button
+                        onClick={() => setShowMyAgents(false)}
+                        className="ml-1 text-purple-600 hover:text-purple-800"
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </span>
+                  )}
                 </div>
               </div>
               <button
@@ -225,22 +298,22 @@ const BrowseAgentsPage: React.FC = () => {
       {/* Loading State */}
       {loading && (
         <div className="text-center py-8">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-          <p className="mt-2 text-gray-600">Loading agents...</p>
+          <LoadingSpinner size="lg" color="blue" text="Loading agents..." />
         </div>
       )}
 
       {/* Results Count and View Toggle */}
       {!loading && (
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
           <p className="text-gray-600">
             Showing {filteredAndSortedAgents.length} agent{filteredAndSortedAgents.length !== 1 ? 's' : ''}
             {selectedCategory && ` in ${selectedCategory}`}
             {searchTerm && ` matching "${searchTerm}"`}
+            {showMyAgents && ' (your agents only)'}
           </p>
           
           {/* View Toggle */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 w-full sm:w-auto justify-center sm:justify-end">
             <span className="text-sm text-gray-600">View:</span>
             <div className="flex border border-gray-300 rounded-md">
               <button
@@ -276,7 +349,7 @@ const BrowseAgentsPage: React.FC = () => {
       {!loading && filteredAndSortedAgents.length > 0 && (
         <>
           {viewMode === 'grid' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {filteredAndSortedAgents.map((agent) => (
                 <AgentCard 
                   key={agent.id} 

@@ -9,6 +9,7 @@ export interface Agent {
   file_size: number;
   download_count: number;
   created_at: string;
+  user_id?: number | null; // ID of the user who uploaded the agent
 }
 
 // API response interfaces

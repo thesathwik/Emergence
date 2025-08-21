@@ -1,31 +1,31 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
+import LoadingSpinner from './LoadingSpinner';
 
 interface FormData {
   name: string;
   description: string;
   category: string;
-  author_name: string;
 }
 
 interface FormErrors {
   name?: string;
   description?: string;
   category?: string;
-  author_name?: string;
   file?: string;
 }
 
 const UploadForm: React.FC = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuth();
   
   const [formData, setFormData] = useState<FormData>({
     name: '',
     description: '',
-    category: '',
-    author_name: ''
+    category: ''
   });
   
   const [file, setFile] = useState<File | null>(null);
@@ -136,9 +136,7 @@ const UploadForm: React.FC = () => {
       newErrors.category = 'Please select a category';
     }
     
-    if (!formData.author_name.trim()) {
-      newErrors.author_name = 'Author name is required';
-    }
+
     
     if (!file) {
       newErrors.file = 'Please select a file to upload';
@@ -166,7 +164,7 @@ const UploadForm: React.FC = () => {
       uploadFormData.append('name', formData.name.trim());
       uploadFormData.append('description', formData.description.trim());
       uploadFormData.append('category', formData.category);
-      uploadFormData.append('author_name', formData.author_name.trim());
+      uploadFormData.append('author_name', user?.name || 'Anonymous');
       uploadFormData.append('file', file!);
       
       // Simulate upload progress (since we don't have actual progress from API)
@@ -201,29 +199,46 @@ const UploadForm: React.FC = () => {
     } catch (error: any) {
       console.error('Upload error:', error);
       
-      // Handle different types of errors
+      // Enhanced error handling with specific messages
       let errorMessage = 'Failed to upload agent';
+      let fieldError = 'file';
       
       if (error.response) {
         // Server responded with error status
         const serverError = error.response.data;
         if (serverError?.message) {
           errorMessage = serverError.message;
+          // Check for specific field errors
+          if (serverError.message.includes('name')) {
+            fieldError = 'name';
+          } else if (serverError.message.includes('description')) {
+            fieldError = 'description';
+          } else if (serverError.message.includes('category')) {
+            fieldError = 'category';
+          }
         } else if (serverError?.error) {
           errorMessage = serverError.error;
+        } else if (error.response.status === 413) {
+          errorMessage = 'File too large. Please use a file smaller than 50MB.';
+        } else if (error.response.status === 401) {
+          errorMessage = 'Authentication required. Please log in again.';
+        } else if (error.response.status === 403) {
+          errorMessage = 'Permission denied. You may not have permission to upload agents.';
         } else {
-          errorMessage = `Server error: ${error.response.status}`;
+          errorMessage = `Server error (${error.response.status}): Please try again later.`;
         }
       } else if (error.request) {
         // Network error - no response received
-        errorMessage = 'Network error: Unable to connect to server';
+        errorMessage = 'Network error: Unable to connect to server. Please check your internet connection.';
+      } else if (error.message?.includes('timeout')) {
+        errorMessage = 'Upload timed out. Please try again with a smaller file or check your connection.';
       } else {
         // Other error
-        errorMessage = error.message || 'An unexpected error occurred';
+        errorMessage = error.message || 'An unexpected error occurred. Please try again.';
       }
       
       // Set error message
-      setErrors({ file: errorMessage });
+      setErrors({ [fieldError]: errorMessage });
       setMessage({ type: 'error', text: `Upload failed: ${errorMessage}` });
       
     } finally {
@@ -239,8 +254,7 @@ const UploadForm: React.FC = () => {
     setFormData({
       name: '',
       description: '',
-      category: '',
-      author_name: ''
+      category: ''
     });
     setFile(null);
     setErrors({});
@@ -260,7 +274,7 @@ const UploadForm: React.FC = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="bg-white shadow-lg rounded-lg overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
@@ -269,7 +283,24 @@ const UploadForm: React.FC = () => {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-6">
+          {/* User Info */}
+          {user && (
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-blue-900">Uploading as: {user.name}</p>
+                  <p className="text-xs text-blue-700">{user.email}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Success/Error Message */}
           {message && (
             <div className={`p-4 rounded-lg border ${
@@ -364,27 +395,7 @@ const UploadForm: React.FC = () => {
             )}
           </div>
 
-          {/* Author Name */}
-          <div>
-            <label htmlFor="author_name" className="block text-sm font-medium text-gray-700 mb-2">
-              Author Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              id="author_name"
-              name="author_name"
-              value={formData.author_name}
-              onChange={handleInputChange}
-              className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                errors.author_name ? 'border-red-300 bg-red-50' : 'border-gray-300 hover:border-gray-400'
-              }`}
-              placeholder="Your name or organization"
-              disabled={loading}
-            />
-            {errors.author_name && (
-              <p className="mt-1 text-sm text-red-600">{errors.author_name}</p>
-            )}
-          </div>
+
 
           {/* File Upload */}
           <div>
@@ -486,8 +497,10 @@ const UploadForm: React.FC = () => {
             <div className="space-y-3">
               <div className="flex justify-between text-sm text-gray-600">
                 <span className="flex items-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-                  {uploadProgress === 100 ? 'Upload Complete!' : 'Uploading...'}
+                  <LoadingSpinner size="sm" color="blue" />
+                  <span className="ml-2">
+                    {uploadProgress === 100 ? 'Upload Complete!' : 'Uploading...'}
+                  </span>
                 </span>
                 <span className="font-medium">{uploadProgress}%</span>
               </div>
@@ -532,10 +545,7 @@ const UploadForm: React.FC = () => {
               }`}
             >
               {loading ? (
-                <div className="flex items-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  {uploadProgress === 100 ? 'Processing...' : 'Uploading...'}
-                </div>
+                <LoadingSpinner size="sm" color="white" text={uploadProgress === 100 ? 'Processing...' : 'Uploading...'} />
               ) : (
                 <div className="flex items-center">
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

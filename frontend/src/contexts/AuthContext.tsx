@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
-import { AuthState, User, LoginCredentials, RegisterCredentials, AuthResponse, AuthError } from '../types';
+import { AuthState, User, LoginCredentials, RegisterCredentials } from '../types';
 import { authService } from '../services/authService';
 
 // Action types
