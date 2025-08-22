@@ -315,6 +315,8 @@ router.get('/verify-email', async (req, res) => {
   try {
     const { token } = req.query;
 
+    console.log('Email verification attempt with token:', token ? token.substring(0, 10) + '...' : 'null');
+
     if (!token) {
       return res.status(400).json({
         success: false,
@@ -322,26 +324,31 @@ router.get('/verify-email', async (req, res) => {
       });
     }
 
+    // Get the user by verification token first (before clearing it)
+    const user = await dbHelpers.getUserByVerificationToken(token);
+    
+    if (!user) {
+      console.log('User not found for token:', token.substring(0, 10) + '...');
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired verification token'
+      });
+    }
+
+    console.log('User found for verification:', user.email);
+
     // Verify the token
     const result = await dbHelpers.verifyUserEmail(token);
 
     if (!result.verified) {
+      console.log('Token verification failed for user:', user.email);
       return res.status(400).json({
         success: false,
         message: 'Invalid or expired verification token'
       });
     }
 
-    // Get the verified user
-    const user = await dbHelpers.getUserByVerificationToken(token);
-    
-    if (!user) {
-      // User was already verified or token was invalid
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid or expired verification token'
-      });
-    }
+    console.log('Email verification successful for user:', user.email);
 
     res.json({
       success: true,
