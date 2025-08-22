@@ -190,8 +190,8 @@ function migrateAgentsTable() {
 // Migration function for agent_instances table
 function migrateAgentInstancesTable() {
   // Check if agent_instances table exists and has required columns
-  db.get("PRAGMA table_info(agent_instances)", [], (err, rows) => {
-    if (err) {
+  db.all("PRAGMA table_info(agent_instances)", [], (err, columns) => {
+    if (err || columns.length === 0) {
       console.log('agent_instances table does not exist, creating...');
       db.run(`CREATE TABLE agent_instances (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
