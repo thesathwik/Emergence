@@ -9,16 +9,29 @@ let db;
 
 if (isProduction && DATABASE_URL) {
   // Use PostgreSQL in production
-  const { Pool } = require('pg');
-  const pool = new Pool({
-    connectionString: DATABASE_URL,
-    ssl: {
-      rejectUnauthorized: false
-    }
-  });
-  
-  console.log('Connected to PostgreSQL database.');
-  db = pool;
+  try {
+    const { Pool } = require('pg');
+    const pool = new Pool({
+      connectionString: DATABASE_URL,
+      ssl: {
+        rejectUnauthorized: false
+      }
+    });
+    
+    console.log('Connected to PostgreSQL database.');
+    db = pool;
+  } catch (error) {
+    console.warn('PostgreSQL not available, falling back to SQLite:', error.message);
+    // Fall back to SQLite
+    const DB_PATH = path.join(__dirname, 'database.sqlite');
+    db = new sqlite3.Database(DB_PATH, (err) => {
+      if (err) {
+        console.error('Error opening database:', err.message);
+      } else {
+        console.log('Connected to SQLite database (fallback).');
+      }
+    });
+  }
 } else {
   // Use SQLite in development
   const DB_PATH = path.join(__dirname, 'database.sqlite');
