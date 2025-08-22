@@ -3,7 +3,7 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
-const { db, dbHelpers, testConnection } = require('./database');
+const { db, dbHelpers, testConnection, initializeDatabase } = require('./database');
 
 // Import auth routes
 const authRoutes = require('./routes/auth');
@@ -13,6 +13,13 @@ const { verifyToken, requireVerifiedEmail } = require('./auth');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Initialize database
+initializeDatabase().then(() => {
+  console.log('Database initialization completed');
+}).catch((error) => {
+  console.error('Database initialization failed:', error);
+});
 
 // Middleware
 app.use(cors({
