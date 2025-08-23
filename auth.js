@@ -8,14 +8,18 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
 
 /**
  * Generate JWT token for user
- * @param {Object} user - User object with id, email, name
+ * @param {Object} user - User object with id, email, name, and optional isVerified flag
  * @returns {string} JWT token
  */
 const generateToken = (user) => {
   const payload = {
     userId: user.id,
     email: user.email,
-    name: user.name
+    name: user.name,
+    // Include email verification status in token so protected routes can
+    // properly check if the user has verified their email address.
+    // Default to false when the property is not provided.
+    isVerified: user.isVerified ?? false
   };
 
   return jwt.sign(payload, JWT_SECRET, { 
