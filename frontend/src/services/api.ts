@@ -267,6 +267,101 @@ export const apiService = {
       throw error;
     }
   },
+
+  /**
+   * Get all capability categories
+   * @returns Promise with capabilities data
+   */
+  getCapabilities: async (): Promise<{ message: string; capabilities: any[]; count: number }> => {
+    try {
+      const response = await api.get('/capabilities');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching capabilities:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get capability by ID
+   * @param id - Capability ID
+   * @returns Promise with capability data
+   */
+  getCapability: async (id: string): Promise<{ message: string; capability: any }> => {
+    try {
+      const response = await api.get(`/capabilities/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching capability ${id}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get agent capabilities
+   * @param agentId - Agent ID
+   * @returns Promise with agent capabilities
+   */
+  getAgentCapabilities: async (agentId: string): Promise<{ message: string; agent: any; capabilities: any[]; count: number }> => {
+    try {
+      const response = await api.get(`/agents/${agentId}/capabilities`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching agent capabilities for ${agentId}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Update agent capabilities
+   * @param agentId - Agent ID
+   * @param capabilityIds - Array of capability IDs
+   * @returns Promise with updated capabilities
+   */
+  updateAgentCapabilities: async (agentId: string, capabilityIds: number[]): Promise<{ message: string; agent: any; capabilities: any[]; count: number }> => {
+    try {
+      const response = await api.post(`/agents/${agentId}/capabilities`, {
+        capability_ids: capabilityIds
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error updating agent capabilities for ${agentId}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get agents by capability
+   * @param capabilityId - Capability ID
+   * @returns Promise with agents that have this capability
+   */
+  getAgentsByCapability: async (capabilityId: string): Promise<{ message: string; capability: any; agents: any[]; count: number }> => {
+    try {
+      const response = await api.get(`/capabilities/${capabilityId}/agents`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching agents by capability ${capabilityId}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Search agents by capabilities
+   * @param capabilityIds - Array of capability IDs
+   * @param matchAll - Whether to match all capabilities or any (default: false)
+   * @returns Promise with matching agents
+   */
+  searchAgentsByCapabilities: async (capabilityIds: number[], matchAll: boolean = false): Promise<AgentsResponse> => {
+    try {
+      const capabilities = capabilityIds.join(',');
+      const matchParam = matchAll ? '&match_all=true' : '';
+      const response = await api.get<AgentsResponse>(`/agents?capabilities=${capabilities}${matchParam}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error searching agents by capabilities:', error);
+      throw error;
+    }
+  },
 };
 
 // Legacy API endpoints (keeping for backward compatibility)

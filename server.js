@@ -11,6 +11,190 @@ const authRoutes = require('./routes/auth');
 // Import auth middleware
 const { verifyToken, requireVerifiedEmail } = require('./auth');
 
+// ============================================================================
+// SECURITY MIDDLEWARE FOR INTER-AGENT COMMUNICATION
+// ============================================================================
+
+// API Key validation middleware
+const validateApiKey = async (req, res, next) => {
+  const startTime = Date.now();
+  let logData = {
+    event_type: 'auth_attempt',
+    ip_address: req.ip || req.connection.remoteAddress,
+    user_agent: req.get('User-Agent'),
+    request_data: {
+      url: req.originalUrl,
+      method: req.method
+    }
+  };
+
+  try {
+    const apiKey = req.headers['x-api-key'] || req.headers['authorization']?.replace('Bearer ', '');
+    
+    if (!apiKey) {
+      logData.error_message = 'Missing API key';
+      logData.response_status = 401;
+      logData.processing_time_ms = Date.now() - startTime;
+      
+      await dbHelpers.logCommunicationEvent(logData);
+      
+      return res.status(401).json({
+        error: 'Authentication required',
+        message: 'API key must be provided in X-API-Key header or Authorization header'
+      });
+    }
+
+    // Validate the API key
+    const keyInfo = await dbHelpers.validateApiKey(apiKey);
+    
+    if (!keyInfo) {
+      logData.api_key_used = apiKey;
+      logData.error_message = 'Invalid API key';
+      logData.response_status = 401;
+      logData.processing_time_ms = Date.now() - startTime;
+      
+      await dbHelpers.logCommunicationEvent(logData);
+      
+      return res.status(401).json({
+        error: 'Invalid API key',
+        message: 'The provided API key is invalid or expired'
+      });
+    }
+
+    // Check if instance is active
+    if (keyInfo.instance_status !== 'running' && keyInfo.instance_status !== 'available') {
+      logData.api_key_used = apiKey;
+      logData.from_instance_id = keyInfo.instance_id;
+      logData.error_message = `Instance status: ${keyInfo.instance_status}`;
+      logData.response_status = 403;
+      logData.processing_time_ms = Date.now() - startTime;
+      
+      await dbHelpers.logCommunicationEvent(logData);
+      
+      return res.status(403).json({
+        error: 'Instance not active',
+        message: 'Agent instance must be in running or available status'
+      });
+    }
+
+    // Attach instance info to request for use in endpoints
+    req.agentAuth = {
+      instanceId: keyInfo.instance_id,
+      agentId: keyInfo.agent_id,
+      instanceName: keyInfo.instance_name,
+      apiKeyId: keyInfo.id,
+      apiKey: apiKey
+    };
+
+    next();
+    
+  } catch (error) {
+    logData.error_message = error.message;
+    logData.response_status = 500;
+    logData.processing_time_ms = Date.now() - startTime;
+    
+    await dbHelpers.logCommunicationEvent(logData);
+    
+    res.status(500).json({
+      error: 'Authentication error',
+      message: 'Failed to validate API key'
+    });
+  }
+};
+
+// Rate limiting middleware for inter-agent communication
+const rateLimitInterAgent = (maxRequests = 100, windowSeconds = 3600) => {
+  return async (req, res, next) => {
+    const startTime = Date.now();
+    
+    try {
+      if (!req.agentAuth) {
+        return res.status(401).json({
+          error: 'Authentication required',
+          message: 'API key validation must be performed first'
+        });
+      }
+
+      const bucketKey = `agent_${req.agentAuth.instanceId}`;
+      const rateLimitResult = await dbHelpers.checkRateLimit(bucketKey, maxRequests, windowSeconds);
+
+      // Add rate limit headers
+      res.set({
+        'X-RateLimit-Limit': maxRequests.toString(),
+        'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+        'X-RateLimit-Reset': new Date(rateLimitResult.reset_time).getTime().toString()
+      });
+
+      if (!rateLimitResult.allowed) {
+        // Log rate limit hit
+        await dbHelpers.logCommunicationEvent({
+          event_type: 'rate_limit_hit',
+          from_instance_id: req.agentAuth.instanceId,
+          api_key_used: req.agentAuth.apiKey,
+          ip_address: req.ip || req.connection.remoteAddress,
+          user_agent: req.get('User-Agent'),
+          rate_limit_bucket: bucketKey,
+          response_status: 429,
+          processing_time_ms: Date.now() - startTime
+        });
+
+        return res.status(429).json({
+          error: 'Rate limit exceeded',
+          message: `Too many requests. Limit: ${maxRequests} requests per ${windowSeconds} seconds`,
+          retry_after: Math.ceil((new Date(rateLimitResult.reset_time) - new Date()) / 1000)
+        });
+      }
+
+      next();
+      
+    } catch (error) {
+      console.error('Rate limiting error:', error);
+      // Don't block the request if rate limiting fails
+      next();
+    }
+  };
+};
+
+// Message logging middleware
+const logCommunication = (eventType) => {
+  return async (req, res, next) => {
+    const startTime = Date.now();
+    
+    // Store original res.json to intercept response
+    const originalJson = res.json;
+    
+    res.json = function(body) {
+      // Log the communication event
+      const logData = {
+        event_type: eventType,
+        from_instance_id: req.agentAuth?.instanceId,
+        to_instance_id: req.body?.to_instance_id,
+        message_id: body?.messageId || body?.message_id,
+        api_key_used: req.agentAuth?.apiKey,
+        ip_address: req.ip || req.connection.remoteAddress,
+        user_agent: req.get('User-Agent'),
+        request_data: {
+          url: req.originalUrl,
+          method: req.method,
+          body: req.body
+        },
+        response_status: res.statusCode,
+        processing_time_ms: Date.now() - startTime
+      };
+
+      // Don't await this to avoid blocking the response
+      dbHelpers.logCommunicationEvent(logData).catch(err => {
+        console.error('Failed to log communication event:', err);
+      });
+
+      // Call original json method
+      originalJson.call(this, body);
+    };
+
+    next();
+  };
+};
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -169,10 +353,20 @@ app.post('/api/upload', (req, res) => {
 app.get('/api/agents', async (req, res) => {
   console.log('API /api/agents called with query:', req.query);
   try {
-    const { category } = req.query;
+    const { category, capabilities } = req.query;
     
     let agents;
-    if (category) {
+    
+    if (capabilities) {
+      // Filter by capabilities if provided
+      const capabilityIds = capabilities.split(',').map(id => parseInt(id)).filter(id => !isNaN(id));
+      if (capabilityIds.length > 0) {
+        const matchAll = req.query.match_all === 'true';
+        agents = await dbHelpers.searchAgentsByCapabilities(capabilityIds, matchAll);
+      } else {
+        agents = [];
+      }
+    } else if (category) {
       // Filter by category if provided
       agents = await dbHelpers.getAgentsByCategory(category);
     } else {
@@ -182,15 +376,18 @@ app.get('/api/agents', async (req, res) => {
     
     // Handle empty results
     if (!agents || agents.length === 0) {
-      const message = category 
-        ? `No agents found in category: ${category}`
-        : 'No agents found';
+      let message = 'No agents found';
+      if (capabilities) {
+        message = 'No agents found with specified capabilities';
+      } else if (category) {
+        message = `No agents found in category: ${category}`;
+      }
       
       return res.json({
         agents: [],
         count: 0,
         message: message,
-        filtered: !!category
+        filtered: !!(category || capabilities)
       });
     }
     
@@ -199,8 +396,8 @@ app.get('/api/agents', async (req, res) => {
     res.json({
       agents: agents,
       count: agents.length,
-      message: `Found ${agents.length} agent(s)${category ? ` in category: ${category}` : ''}`,
-      filtered: !!category
+      message: `Found ${agents.length} agent(s)${category ? ` in category: ${category}` : ''}${capabilities ? ' with specified capabilities' : ''}`,
+      filtered: !!(category || capabilities)
     });
     
   } catch (err) {
@@ -212,9 +409,190 @@ app.get('/api/agents', async (req, res) => {
   }
 });
 
+// Agent Discovery Engine - Must come before :id routes
+app.get('/api/agents/discover', async (req, res) => {
+  try {
+    const startTime = Date.now();
+    
+    // Parse query parameters
+    const {
+      capability,
+      capabilities,
+      match_all,
+      status,
+      location,
+      radius,
+      availability,
+      load_threshold,
+      limit,
+      sort_by
+    } = req.query;
+
+    // Build filters object
+    const filters = {};
+    
+    if (capability) filters.capability = capability;
+    if (capabilities) {
+      // Parse capabilities as comma-separated IDs
+      const capabilityIds = capabilities.split(',')
+        .map(id => parseInt(id.trim()))
+        .filter(id => !isNaN(id));
+      if (capabilityIds.length > 0) {
+        filters.capabilities = capabilityIds;
+      }
+    }
+    if (match_all !== undefined) filters.match_all = match_all === 'true';
+    if (status) filters.status = status;
+    if (location) filters.location = location;
+    if (radius) filters.radius = parseInt(radius) || 50;
+    if (availability) filters.availability = availability;
+    if (load_threshold) filters.load_threshold = parseInt(load_threshold) || 80;
+    if (limit) filters.limit = parseInt(limit) || 10;
+    if (sort_by) filters.sort_by = sort_by;
+
+    // Execute discovery
+    const agents = await dbHelpers.discoverRankedAgents(filters);
+    
+    // Apply additional location filtering if specified
+    let filteredAgents = agents;
+    if (location && agents.length > 0) {
+      const locationAgents = await dbHelpers.getAgentsByLocation(location, filters.radius);
+      const locationInstanceIds = new Set(locationAgents.map(a => a.instance_id));
+      filteredAgents = agents.filter(agent => 
+        !location || locationInstanceIds.has(agent.instance_id) || !agent.location.city
+      );
+    }
+
+    // Calculate discovery metrics
+    const discoveryTime = Date.now() - startTime;
+    const totalAvailable = await dbHelpers.getAvailableAgentInstances({ status: status || 'running' });
+
+    // Build response
+    const response = {
+      message: `Found ${filteredAgents.length} matching agents`,
+      discovery_criteria: {
+        capability: capability || null,
+        capabilities: filters.capabilities || null,
+        match_all: filters.match_all || false,
+        status: status || 'running',
+        location: location || null,
+        radius: filters.radius,
+        availability: availability || 'now',
+        load_threshold: filters.load_threshold,
+        sort_by: sort_by || 'last_ping',
+        filters_applied: Object.keys(filters)
+      },
+      agents: filteredAgents,
+      count: filteredAgents.length,
+      total_available: totalAvailable.length,
+      discovery_time_ms: discoveryTime
+    };
+
+    // Add helpful suggestions if no agents found
+    if (filteredAgents.length === 0) {
+      const allAgents = await dbHelpers.getAllAgentInstances();
+      const runningAgents = allAgents.filter(a => a.status === 'running');
+      
+      response.suggestions = {
+        total_agents: allAgents.length,
+        running_agents: runningAgents.length,
+        message: runningAgents.length > 0 
+          ? 'Try removing some filters or check different capabilities' 
+          : 'No agents are currently running'
+      };
+
+      if (capability || capabilities) {
+        const availableCapabilities = await dbHelpers.getAllCapabilities();
+        response.suggestions.available_capabilities = availableCapabilities.slice(0, 5).map(c => ({
+          name: c.name,
+          display_name: c.display_name
+        }));
+      }
+    }
+
+    res.json(response);
+    
+  } catch (error) {
+    console.error('Error in agent discovery:', error);
+    res.status(500).json({
+      error: 'Discovery failed',
+      message: error.message,
+      discovery_time_ms: Date.now() - (req.query.startTime || Date.now())
+    });
+  }
+});
+
+// Nearby agents discovery endpoint
+app.get('/api/agents/discover/nearby', async (req, res) => {
+  try {
+    const { lat, lng, radius = 50, capability, status = 'running', limit = 10 } = req.query;
+    
+    if (!lat || !lng) {
+      return res.status(400).json({
+        error: 'Invalid coordinates',
+        message: 'Both lat and lng parameters are required'
+      });
+    }
+
+    const latitude = parseFloat(lat);
+    const longitude = parseFloat(lng);
+    
+    if (isNaN(latitude) || isNaN(longitude)) {
+      return res.status(400).json({
+        error: 'Invalid coordinates',
+        message: 'lat and lng must be valid numbers'
+      });
+    }
+
+    // For this implementation, we'll use a simplified location search
+    // In production, you'd use proper geographic distance calculations
+    const agents = await dbHelpers.discoverRankedAgents({
+      capability: capability,
+      status: status,
+      limit: parseInt(limit)
+    });
+
+    // Filter by proximity (simplified - would use proper geo calculations in production)
+    const nearbyAgents = agents.filter(agent => {
+      const agentLocation = agent.location;
+      if (!agentLocation.coordinates || agentLocation.coordinates.length !== 2) {
+        return false;
+      }
+      
+      // Simplified distance calculation (not accurate for production)
+      const [agentLat, agentLng] = agentLocation.coordinates;
+      const latDiff = Math.abs(latitude - agentLat);
+      const lngDiff = Math.abs(longitude - agentLng);
+      const approximateDistance = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff) * 111; // rough km conversion
+      
+      return approximateDistance <= parseInt(radius);
+    });
+
+    res.json({
+      message: `Found ${nearbyAgents.length} agents within ${radius}km`,
+      search_criteria: {
+        coordinates: [latitude, longitude],
+        radius: parseInt(radius),
+        capability: capability || null,
+        status: status
+      },
+      agents: nearbyAgents,
+      count: nearbyAgents.length
+    });
+    
+  } catch (error) {
+    console.error('Error in nearby agent discovery:', error);
+    res.status(500).json({
+      error: 'Nearby discovery failed',
+      message: error.message
+    });
+  }
+});
+
 app.get('/api/agents/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    const { include_capabilities } = req.query;
     
     // Validate ID parameter
     const agentId = parseInt(id);
@@ -235,10 +613,19 @@ app.get('/api/agents/:id', async (req, res) => {
       });
     }
     
+    // Include capabilities if requested
+    let capabilities = [];
+    if (include_capabilities === 'true') {
+      capabilities = await dbHelpers.getAgentCapabilities(agentId);
+    }
+    
     // Return agent details with success message
     res.json({
       message: 'Agent retrieved successfully',
-      agent: agent
+      agent: {
+        ...agent,
+        ...(include_capabilities === 'true' && { capabilities })
+      }
     });
     
   } catch (err) {
@@ -279,7 +666,7 @@ app.post('/api/agents', verifyToken, requireVerifiedEmail, (req, res) => {
       }
 
       // Extract agent information from form data
-      const { name, description, category, author_name } = req.body;
+      const { name, description, category, author_name, capabilities } = req.body;
       
       // Validate required fields
       const requiredFields = ['name', 'description', 'category', 'author_name'];
@@ -301,6 +688,28 @@ app.post('/api/agents', verifyToken, requireVerifiedEmail, (req, res) => {
         });
       }
 
+      // Parse capabilities (can be JSON string or comma-separated IDs)
+      let capabilityIds = [];
+      if (capabilities) {
+        try {
+          if (typeof capabilities === 'string') {
+            // Try to parse as JSON first, then fall back to comma-separated
+            if (capabilities.startsWith('[') || capabilities.startsWith('{')) {
+              capabilityIds = JSON.parse(capabilities);
+            } else {
+              capabilityIds = capabilities.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+            }
+          } else if (Array.isArray(capabilities)) {
+            capabilityIds = capabilities.map(id => parseInt(id)).filter(id => !isNaN(id));
+          }
+        } catch (parseError) {
+          return res.status(400).json({
+            error: 'Invalid capabilities format',
+            message: 'Capabilities must be a JSON array or comma-separated list of capability IDs'
+          });
+        }
+      }
+
       // Create agent data with file information and user association
       const agentData = {
         name: name.trim(),
@@ -312,8 +721,16 @@ app.post('/api/agents', verifyToken, requireVerifiedEmail, (req, res) => {
         user_id: req.user.userId // Associate with authenticated user
       };
 
-      // Save to database
+      // Save agent to database
       const agent = await dbHelpers.createAgent(agentData);
+      
+      // Add capabilities if provided
+      if (capabilityIds.length > 0) {
+        await dbHelpers.setAgentCapabilities(agent.id, capabilityIds);
+      }
+      
+      // Get agent capabilities for response
+      const agentCapabilities = await dbHelpers.getAgentCapabilities(agent.id);
       
       res.status(201).json({
         message: 'Agent created successfully',
@@ -327,7 +744,8 @@ app.post('/api/agents', verifyToken, requireVerifiedEmail, (req, res) => {
           file_size: agent.file_size,
           user_id: agent.user_id,
           download_count: 0,
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
+          capabilities: agentCapabilities
         },
         user: {
           id: req.user.userId,
@@ -467,6 +885,289 @@ app.get('/api/agents/top/downloaded', async (req, res) => {
   }
 });
 
+// Capabilities API routes
+app.get('/api/capabilities', async (req, res) => {
+  try {
+    const capabilities = await dbHelpers.getAllCapabilities();
+    res.json({
+      message: `Found ${capabilities.length} capability categories`,
+      capabilities: capabilities,
+      count: capabilities.length
+    });
+  } catch (err) {
+    console.error('Error fetching capabilities:', err);
+    res.status(500).json({ 
+      error: 'Failed to fetch capabilities',
+      message: err.message 
+    });
+  }
+});
+
+app.get('/api/capabilities/:id', async (req, res) => {
+  try {
+    const capability = await dbHelpers.getCapabilityById(req.params.id);
+    if (!capability) {
+      return res.status(404).json({ 
+        error: 'Capability not found',
+        message: `No capability found with ID: ${req.params.id}`
+      });
+    }
+    res.json({
+      message: 'Capability retrieved successfully',
+      capability: capability
+    });
+  } catch (err) {
+    console.error('Error fetching capability:', err);
+    res.status(500).json({ 
+      error: 'Failed to fetch capability',
+      message: err.message 
+    });
+  }
+});
+
+app.get('/api/agents/:id/capabilities', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Validate agent ID
+    const agentId = parseInt(id);
+    if (!id || isNaN(agentId) || agentId <= 0) {
+      return res.status(400).json({ 
+        error: 'Invalid agent ID',
+        message: 'Agent ID must be a positive number'
+      });
+    }
+    
+    // Check if agent exists
+    const agent = await dbHelpers.getAgentById(agentId);
+    if (!agent) {
+      return res.status(404).json({ 
+        error: 'Agent not found',
+        message: `No agent found with ID: ${agentId}`
+      });
+    }
+    
+    const capabilities = await dbHelpers.getAgentCapabilities(agentId);
+    res.json({
+      message: `Found ${capabilities.length} capabilities for agent: ${agent.name}`,
+      agent: {
+        id: agent.id,
+        name: agent.name
+      },
+      capabilities: capabilities,
+      count: capabilities.length
+    });
+  } catch (err) {
+    console.error('Error fetching agent capabilities:', err);
+    res.status(500).json({ 
+      error: 'Failed to fetch agent capabilities',
+      message: err.message 
+    });
+  }
+});
+
+app.post('/api/agents/:id/capabilities', verifyToken, requireVerifiedEmail, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { capability_ids } = req.body;
+    
+    // Validate agent ID
+    const agentId = parseInt(id);
+    if (!id || isNaN(agentId) || agentId <= 0) {
+      return res.status(400).json({ 
+        error: 'Invalid agent ID',
+        message: 'Agent ID must be a positive number'
+      });
+    }
+    
+    // Validate capability_ids
+    if (!capability_ids || !Array.isArray(capability_ids)) {
+      return res.status(400).json({ 
+        error: 'Invalid capabilities',
+        message: 'capability_ids must be an array of capability IDs'
+      });
+    }
+    
+    const capabilityIds = capability_ids.map(id => parseInt(id)).filter(id => !isNaN(id));
+    
+    // Check if agent exists
+    const agent = await dbHelpers.getAgentById(agentId);
+    if (!agent) {
+      return res.status(404).json({ 
+        error: 'Agent not found',
+        message: `No agent found with ID: ${agentId}`
+      });
+    }
+    
+    // Update agent capabilities
+    await dbHelpers.setAgentCapabilities(agentId, capabilityIds);
+    
+    // Get updated capabilities
+    const updatedCapabilities = await dbHelpers.getAgentCapabilities(agentId);
+    
+    res.json({
+      message: `Successfully updated capabilities for agent: ${agent.name}`,
+      agent: {
+        id: agent.id,
+        name: agent.name
+      },
+      capabilities: updatedCapabilities,
+      count: updatedCapabilities.length
+    });
+  } catch (err) {
+    console.error('Error updating agent capabilities:', err);
+    res.status(500).json({ 
+      error: 'Failed to update agent capabilities',
+      message: err.message 
+    });
+  }
+});
+
+app.get('/api/capabilities/:id/agents', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Validate capability ID
+    const capabilityId = parseInt(id);
+    if (!id || isNaN(capabilityId) || capabilityId <= 0) {
+      return res.status(400).json({ 
+        error: 'Invalid capability ID',
+        message: 'Capability ID must be a positive number'
+      });
+    }
+    
+    // Check if capability exists
+    const capability = await dbHelpers.getCapabilityById(capabilityId);
+    if (!capability) {
+      return res.status(404).json({ 
+        error: 'Capability not found',
+        message: `No capability found with ID: ${capabilityId}`
+      });
+    }
+    
+    const agents = await dbHelpers.getAgentsByCapability(capabilityId);
+    res.json({
+      message: `Found ${agents.length} agents with capability: ${capability.display_name}`,
+      capability: {
+        id: capability.id,
+        name: capability.name,
+        display_name: capability.display_name,
+        description: capability.description
+      },
+      agents: agents,
+      count: agents.length
+    });
+  } catch (err) {
+    console.error('Error fetching agents by capability:', err);
+    res.status(500).json({ 
+      error: 'Failed to fetch agents by capability',
+      message: err.message 
+    });
+  }
+});
+
+// Batch discovery endpoint for multiple requests
+app.post('/api/agents/discover/batch', async (req, res) => {
+  try {
+    const { requests } = req.body;
+    
+    if (!Array.isArray(requests) || requests.length === 0) {
+      return res.status(400).json({
+        error: 'Invalid batch request',
+        message: 'requests must be a non-empty array of discovery criteria'
+      });
+    }
+
+    if (requests.length > 10) {
+      return res.status(400).json({
+        error: 'Too many requests',
+        message: 'Maximum 10 requests allowed per batch'
+      });
+    }
+
+    const results = [];
+    const startTime = Date.now();
+
+    for (let i = 0; i < requests.length; i++) {
+      const request = requests[i];
+      try {
+        const agents = await dbHelpers.discoverRankedAgents(request);
+        results.push({
+          request_id: i,
+          success: true,
+          agents: agents,
+          count: agents.length,
+          criteria: request
+        });
+      } catch (error) {
+        results.push({
+          request_id: i,
+          success: false,
+          error: error.message,
+          agents: [],
+          count: 0,
+          criteria: request
+        });
+      }
+    }
+
+    const discoveryTime = Date.now() - startTime;
+    const totalFound = results.reduce((sum, result) => sum + result.count, 0);
+
+    res.json({
+      message: `Processed ${requests.length} discovery requests, found ${totalFound} total agents`,
+      batch_results: results,
+      total_requests: requests.length,
+      successful_requests: results.filter(r => r.success).length,
+      total_agents_found: totalFound,
+      batch_discovery_time_ms: discoveryTime
+    });
+    
+  } catch (error) {
+    console.error('Error in batch discovery:', error);
+    res.status(500).json({
+      error: 'Batch discovery failed',
+      message: error.message
+    });
+  }
+});
+
+// Alternative endpoint for finding agents by capability name
+app.get('/api/agents/by-capability/:capability', async (req, res) => {
+  try {
+    const { capability } = req.params;
+    
+    // Find capability by name (case-insensitive)
+    const capabilityRecord = await dbHelpers.getCapabilityByName(capability.toLowerCase());
+    if (!capabilityRecord) {
+      return res.status(404).json({ 
+        error: 'Capability not found',
+        message: `No capability found with name: ${capability}`,
+        available_capabilities: await dbHelpers.getAllCapabilities()
+      });
+    }
+    
+    const agents = await dbHelpers.getAgentsByCapability(capabilityRecord.id);
+    res.json({
+      message: `Found ${agents.length} agents with capability: ${capabilityRecord.display_name}`,
+      capability: {
+        id: capabilityRecord.id,
+        name: capabilityRecord.name,
+        display_name: capabilityRecord.display_name,
+        description: capabilityRecord.description
+      },
+      agents: agents,
+      count: agents.length
+    });
+  } catch (err) {
+    console.error('Error fetching agents by capability name:', err);
+    res.status(500).json({ 
+      error: 'Failed to fetch agents by capability',
+      message: err.message 
+    });
+  }
+});
+
 // ============================================================================
 // COMMUNICATION API ENDPOINTS
 // ============================================================================
@@ -539,6 +1240,12 @@ app.post('/api/webhook/register', async (req, res) => {
     
     const instance = await dbHelpers.createAgentInstance(instanceData);
     
+    // Generate API key for the new instance
+    const apiKeyResult = await dbHelpers.generateApiKey(
+      instance.id,
+      `${instance.instance_name}-primary-key`
+    );
+    
     // Return success response
     res.status(201).json({
       message: 'Agent instance registered successfully',
@@ -556,6 +1263,12 @@ app.post('/api/webhook/register', async (req, res) => {
         name: agent.name,
         description: agent.description,
         category: agent.category
+      },
+      security: {
+        api_key: apiKeyResult.api_key,
+        key_id: apiKeyResult.id,
+        key_name: apiKeyResult.key_name,
+        instructions: 'Store this API key securely. Include it in the X-API-Key header for inter-agent communication.'
       }
     });
     
@@ -571,7 +1284,7 @@ app.post('/api/webhook/register', async (req, res) => {
 // POST /api/webhook/ping - Agent health check endpoint
 app.post('/api/webhook/ping', async (req, res) => {
   try {
-    const { instance_id, status, metadata } = req.body;
+    const { instance_id, status, metadata, metrics } = req.body;
     
     // Validate required fields
     if (!instance_id) {
@@ -610,6 +1323,14 @@ app.post('/api/webhook/ping', async (req, res) => {
       });
     }
     
+    // Validate metrics if provided
+    if (metrics && typeof metrics !== 'object') {
+      return res.status(400).json({
+        error: 'Invalid metrics',
+        message: 'metrics must be an object'
+      });
+    }
+    
     // Check if instance exists
     const existingInstance = await dbHelpers.getAgentInstanceById(instanceId);
     if (!existingInstance) {
@@ -624,7 +1345,12 @@ app.post('/api/webhook/ping', async (req, res) => {
     
     // Update status if provided
     if (status) {
-      await dbHelpers.updateInstanceStatus(instanceId, status);
+      await dbHelpers.updateAgentInstanceStatus(instanceId, status);
+    }
+    
+    // Update performance metrics if provided
+    if (metrics) {
+      await dbHelpers.updateInstanceMetrics(instanceId, metrics);
     }
     
     // Update metadata if provided
@@ -698,11 +1424,11 @@ app.get('/api/agents/:id/instances', async (req, res) => {
     let instances;
     if (status) {
       // Filter by status if provided
-      const allInstances = await dbHelpers.getInstancesByAgentId(agentId);
+      const allInstances = await dbHelpers.getAgentInstancesByAgentId(agentId);
       instances = allInstances.filter(instance => instance.status === status);
     } else {
       // Get all instances
-      instances = await dbHelpers.getInstancesByAgentId(agentId);
+      instances = await dbHelpers.getAgentInstancesByAgentId(agentId);
     }
     
     // Return response
@@ -753,7 +1479,7 @@ app.get('/api/instances', async (req, res) => {
         });
       }
       
-      instances = await dbHelpers.getInstancesByAgentId(agentId);
+      instances = await dbHelpers.getAgentInstancesByAgentId(agentId);
       
       if (status) {
         instances = instances.filter(instance => instance.status === status);
@@ -833,6 +1559,664 @@ app.get('/api/instances/stale', async (req, res) => {
     console.error('Error fetching stale instances:', error);
     res.status(500).json({
       error: 'Failed to fetch stale instances',
+      message: error.message
+    });
+  }
+});
+
+// ============================================================================
+// INTER-AGENT MESSAGING API ENDPOINTS
+// ============================================================================
+
+// POST /api/agents/message - Send message from one agent to another
+app.post('/api/agents/message', 
+  validateApiKey, 
+  rateLimitInterAgent(100, 3600), // 100 requests per hour
+  logCommunication('message_sent'),
+  async (req, res) => {
+  try {
+    const {
+      to_instance_id,
+      message_type,
+      content,
+      subject,
+      priority = 3,
+      correlation_id,
+      expires_at
+    } = req.body;
+
+    // Use authenticated instance as sender
+    const from_instance_id = req.agentAuth.instanceId;
+
+    // Validate required fields
+    if (!to_instance_id || !message_type || !content) {
+      return res.status(400).json({
+        error: 'Missing required fields',
+        message: 'to_instance_id, message_type, and content are required',
+        required: ['to_instance_id', 'message_type', 'content'],
+        received: Object.keys(req.body)
+      });
+    }
+
+    // Validate message_type
+    const validMessageTypes = ['request', 'response', 'error'];
+    if (!validMessageTypes.includes(message_type)) {
+      return res.status(400).json({
+        error: 'Invalid message_type',
+        message: `message_type must be one of: ${validMessageTypes.join(', ')}`,
+        validTypes: validMessageTypes
+      });
+    }
+
+    // Validate instance IDs are positive integers
+    const fromInstanceId = from_instance_id;
+    const toInstanceId = parseInt(to_instance_id);
+    
+    if (isNaN(toInstanceId) || toInstanceId <= 0) {
+      return res.status(400).json({
+        error: 'Invalid to_instance_id',
+        message: 'to_instance_id must be a positive number'
+      });
+    }
+
+    // Validate priority if provided
+    if (priority !== undefined) {
+      const priorityNum = parseInt(priority);
+      if (isNaN(priorityNum) || priorityNum < 1 || priorityNum > 5) {
+        return res.status(400).json({
+          error: 'Invalid priority',
+          message: 'priority must be a number between 1 and 5'
+        });
+      }
+    }
+
+    // Check if recipient instance exists and is available
+    const toInstance = await dbHelpers.getAgentInstanceById(toInstanceId);
+    if (!toInstance) {
+      return res.status(404).json({
+        error: 'Recipient instance not found',
+        message: `No agent instance found with ID: ${toInstanceId}`
+      });
+    }
+
+    if (toInstance.status !== 'running' && toInstance.status !== 'available') {
+      return res.status(403).json({
+        error: 'Recipient not available',
+        message: 'Recipient agent instance must be in running or available status to receive messages'
+      });
+    }
+
+    // Get sender instance info from authentication
+    const fromInstance = {
+      id: req.agentAuth.instanceId,
+      instance_name: req.agentAuth.instanceName,
+      agent_id: req.agentAuth.agentId
+    };
+
+    // Validate expiration date if provided
+    let expirationDate = null;
+    if (expires_at) {
+      expirationDate = new Date(expires_at);
+      if (isNaN(expirationDate.getTime())) {
+        return res.status(400).json({
+          error: 'Invalid expires_at',
+          message: 'expires_at must be a valid ISO datetime string'
+        });
+      }
+      if (expirationDate <= new Date()) {
+        return res.status(400).json({
+          error: 'Invalid expires_at',
+          message: 'expires_at must be in the future'
+        });
+      }
+      expirationDate = expirationDate.toISOString();
+    }
+
+    // Send the message
+    const messageResult = await dbHelpers.sendMessage(
+      fromInstanceId,
+      toInstanceId,
+      message_type,
+      content,
+      {
+        subject,
+        priority: parseInt(priority),
+        correlationId: correlation_id,
+        expiresAt: expirationDate
+      }
+    );
+
+    // Update delivery status to delivered (since we're using HTTP for now)
+    await dbHelpers.updateMessageStatus(messageResult.message_id, 'delivered');
+
+    res.status(201).json({
+      message: 'Message sent successfully',
+      messageId: messageResult.message_id,
+      from: {
+        instance_id: fromInstance.id,
+        instance_name: fromInstance.instance_name,
+        agent_id: fromInstance.agent_id
+      },
+      to: {
+        instance_id: toInstance.id,
+        instance_name: toInstance.instance_name,
+        agent_id: toInstance.agent_id
+      },
+      message_details: {
+        type: message_type,
+        subject: subject || null,
+        content_length: content.length,
+        priority,
+        correlation_id: correlation_id || null,
+        expires_at: expirationDate,
+        created_at: messageResult.created_at
+      }
+    });
+
+  } catch (error) {
+    console.error('Error sending message:', error);
+    res.status(500).json({
+      error: 'Failed to send message',
+      message: error.message
+    });
+  }
+});
+
+// GET /api/agents/:instance_id/messages - Get messages for an agent instance
+app.get('/api/agents/:instance_id/messages', 
+  validateApiKey,
+  logCommunication('message_received'),
+  async (req, res) => {
+  try {
+    const { instance_id } = req.params;
+    const { 
+      message_type, 
+      status, 
+      limit = 50, 
+      offset = 0, 
+      include_read = 'true' 
+    } = req.query;
+
+    // Validate instance_id
+    const instanceId = parseInt(instance_id);
+    if (isNaN(instanceId) || instanceId <= 0) {
+      return res.status(400).json({
+        error: 'Invalid instance_id',
+        message: 'instance_id must be a positive number'
+      });
+    }
+
+    // Only allow agents to access their own messages
+    if (req.agentAuth.instanceId !== instanceId) {
+      return res.status(403).json({
+        error: 'Unauthorized',
+        message: 'You can only access messages for your own instance'
+      });
+    }
+
+    // Check if instance exists
+    const instance = await dbHelpers.getAgentInstanceById(instanceId);
+    if (!instance) {
+      return res.status(404).json({
+        error: 'Instance not found',
+        message: `No agent instance found with ID: ${instanceId}`
+      });
+    }
+
+    // Get messages with filtering options
+    const messages = await dbHelpers.getMessages(instanceId, {
+      messageType: message_type,
+      status,
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      includeRead: include_read === 'true'
+    });
+
+    res.json({
+      message: `Found ${messages.length} message(s) for instance: ${instance.instance_name}`,
+      instance: {
+        id: instance.id,
+        name: instance.instance_name,
+        agent_id: instance.agent_id
+      },
+      messages: messages.map(msg => ({
+        id: msg.id,
+        from: {
+          instance_id: msg.from_instance_id,
+          instance_name: msg.from_instance_name
+        },
+        to: {
+          instance_id: msg.to_instance_id,
+          instance_name: msg.to_instance_name
+        },
+        type: msg.message_type,
+        subject: msg.subject,
+        content: msg.content,
+        priority: msg.priority,
+        correlation_id: msg.correlation_id,
+        status: msg.status,
+        expires_at: msg.expires_at,
+        created_at: msg.created_at,
+        delivered_at: msg.delivered_at,
+        read_at: msg.read_at
+      })),
+      count: messages.length,
+      pagination: {
+        limit: parseInt(limit),
+        offset: parseInt(offset)
+      },
+      filters: {
+        message_type: message_type || null,
+        status: status || null,
+        include_read: include_read === 'true'
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching messages:', error);
+    res.status(500).json({
+      error: 'Failed to fetch messages',
+      message: error.message
+    });
+  }
+});
+
+// PUT /api/messages/:message_id/status - Update message status (mark as read, etc.)
+app.put('/api/messages/:message_id/status', validateApiKey, async (req, res) => {
+  try {
+    const { message_id } = req.params;
+    const { status } = req.body;
+
+    // Validate message_id
+    const messageId = parseInt(message_id);
+    if (isNaN(messageId) || messageId <= 0) {
+      return res.status(400).json({
+        error: 'Invalid message_id',
+        message: 'message_id must be a positive number'
+      });
+    }
+
+    // Validate required fields
+    if (!status) {
+      return res.status(400).json({
+        error: 'Missing required fields',
+        message: 'status is required',
+        required: ['status']
+      });
+    }
+    
+    // Use authenticated instance
+    const instanceId = req.agentAuth.instanceId;
+
+    // Validate status
+    const validStatuses = ['delivered', 'read', 'failed'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        error: 'Invalid status',
+        message: `status must be one of: ${validStatuses.join(', ')}`,
+        validStatuses
+      });
+    }
+
+    // Check if message exists
+    const message = await dbHelpers.getMessageById(messageId);
+    if (!message) {
+      return res.status(404).json({
+        error: 'Message not found',
+        message: `No message found with ID: ${messageId}`
+      });
+    }
+
+    // Validate that the instanceId matches the recipient
+    if (message.to_instance_id !== instanceId) {
+      return res.status(403).json({
+        error: 'Unauthorized',
+        message: 'Only the recipient can update message status'
+      });
+    }
+
+    // Update message status
+    const updateResult = await dbHelpers.updateMessageStatus(messageId, status);
+
+    res.json({
+      message: `Message status updated to: ${status}`,
+      message_id: messageId,
+      previous_status: message.status,
+      new_status: status,
+      updated_at: updateResult.updated_at
+    });
+
+  } catch (error) {
+    console.error('Error updating message status:', error);
+    res.status(500).json({
+      error: 'Failed to update message status',
+      message: error.message
+    });
+  }
+});
+
+// GET /api/messages/:message_id - Get specific message details
+app.get('/api/messages/:message_id', async (req, res) => {
+  try {
+    const { message_id } = req.params;
+    const { instance_id } = req.query;
+
+    // Validate message_id
+    const messageId = parseInt(message_id);
+    if (isNaN(messageId) || messageId <= 0) {
+      return res.status(400).json({
+        error: 'Invalid message_id',
+        message: 'message_id must be a positive number'
+      });
+    }
+
+    // Get message details
+    const message = await dbHelpers.getMessageById(messageId);
+    if (!message) {
+      return res.status(404).json({
+        error: 'Message not found',
+        message: `No message found with ID: ${messageId}`
+      });
+    }
+
+    // If instance_id is provided, verify authorization
+    if (instance_id) {
+      const instanceId = parseInt(instance_id);
+      if (message.from_instance_id !== instanceId && message.to_instance_id !== instanceId) {
+        return res.status(403).json({
+          error: 'Unauthorized',
+          message: 'You can only view messages you sent or received'
+        });
+      }
+    }
+
+    res.json({
+      message: 'Message retrieved successfully',
+      message_details: {
+        id: message.id,
+        from: {
+          instance_id: message.from_instance_id,
+          instance_name: message.from_instance_name
+        },
+        to: {
+          instance_id: message.to_instance_id,
+          instance_name: message.to_instance_name
+        },
+        type: message.message_type,
+        subject: message.subject,
+        content: message.content,
+        priority: message.priority,
+        correlation_id: message.correlation_id,
+        expires_at: message.expires_at,
+        created_at: message.created_at,
+        delivery_status: {
+          status: message.status,
+          attempts: message.attempts,
+          delivered_at: message.delivered_at,
+          read_at: message.read_at,
+          error_message: message.error_message
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching message details:', error);
+    res.status(500).json({
+      error: 'Failed to fetch message details',
+      message: error.message
+    });
+  }
+});
+
+// GET /api/messages/stats - Get message queue statistics
+app.get('/api/messages/stats', async (req, res) => {
+  try {
+    const stats = await dbHelpers.getMessageQueueStats();
+    
+    // Clean up expired messages
+    const cleanupResult = await dbHelpers.cleanupExpiredMessages();
+
+    res.json({
+      message: 'Message queue statistics retrieved successfully',
+      statistics: stats,
+      cleanup: {
+        expired_messages_updated: cleanupResult.expired_count
+      },
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Error fetching message stats:', error);
+    res.status(500).json({
+      error: 'Failed to fetch message statistics',
+      message: error.message
+    });
+  }
+});
+
+// ============================================================================
+// SECURITY & API KEY MANAGEMENT ENDPOINTS
+// ============================================================================
+
+// GET /api/agents/:instance_id/api-keys - Get API keys for an instance
+app.get('/api/agents/:instance_id/api-keys', validateApiKey, async (req, res) => {
+  try {
+    const { instance_id } = req.params;
+    const { include_revoked = 'false' } = req.query;
+    
+    const instanceId = parseInt(instance_id);
+    if (isNaN(instanceId) || instanceId <= 0) {
+      return res.status(400).json({
+        error: 'Invalid instance_id',
+        message: 'instance_id must be a positive number'
+      });
+    }
+
+    // Only allow agents to view their own API keys
+    if (req.agentAuth.instanceId !== instanceId) {
+      return res.status(403).json({
+        error: 'Unauthorized',
+        message: 'You can only view API keys for your own instance'
+      });
+    }
+
+    const apiKeys = await dbHelpers.getInstanceApiKeys(instanceId, include_revoked === 'true');
+
+    res.json({
+      message: `Found ${apiKeys.length} API key(s) for instance: ${req.agentAuth.instanceName}`,
+      instance_id: instanceId,
+      api_keys: apiKeys,
+      count: apiKeys.length
+    });
+
+  } catch (error) {
+    console.error('Error fetching API keys:', error);
+    res.status(500).json({
+      error: 'Failed to fetch API keys',
+      message: error.message
+    });
+  }
+});
+
+// POST /api/agents/:instance_id/api-keys - Generate new API key
+app.post('/api/agents/:instance_id/api-keys', validateApiKey, async (req, res) => {
+  try {
+    const { instance_id } = req.params;
+    const { key_name, expires_at } = req.body;
+    
+    const instanceId = parseInt(instance_id);
+    if (isNaN(instanceId) || instanceId <= 0) {
+      return res.status(400).json({
+        error: 'Invalid instance_id',
+        message: 'instance_id must be a positive number'
+      });
+    }
+
+    // Only allow agents to generate API keys for their own instance
+    if (req.agentAuth.instanceId !== instanceId) {
+      return res.status(403).json({
+        error: 'Unauthorized',
+        message: 'You can only generate API keys for your own instance'
+      });
+    }
+
+    // Validate expires_at if provided
+    let expirationDate = null;
+    if (expires_at) {
+      expirationDate = new Date(expires_at);
+      if (isNaN(expirationDate.getTime())) {
+        return res.status(400).json({
+          error: 'Invalid expires_at',
+          message: 'expires_at must be a valid ISO datetime string'
+        });
+      }
+      if (expirationDate <= new Date()) {
+        return res.status(400).json({
+          error: 'Invalid expires_at',
+          message: 'expires_at must be in the future'
+        });
+      }
+      expirationDate = expirationDate.toISOString();
+    }
+
+    const apiKeyResult = await dbHelpers.generateApiKey(
+      instanceId,
+      key_name || `${req.agentAuth.instanceName}-${Date.now()}`,
+      expirationDate
+    );
+
+    res.status(201).json({
+      message: 'API key generated successfully',
+      api_key_details: {
+        id: apiKeyResult.id,
+        api_key: apiKeyResult.api_key,
+        key_name: apiKeyResult.key_name,
+        expires_at: apiKeyResult.expires_at,
+        created_at: apiKeyResult.created_at
+      },
+      security_note: 'Store this API key securely. It will not be shown again.'
+    });
+
+  } catch (error) {
+    console.error('Error generating API key:', error);
+    res.status(500).json({
+      error: 'Failed to generate API key',
+      message: error.message
+    });
+  }
+});
+
+// DELETE /api/agents/:instance_id/api-keys/:key_id - Revoke API key
+app.delete('/api/agents/:instance_id/api-keys/:key_id', validateApiKey, async (req, res) => {
+  try {
+    const { instance_id, key_id } = req.params;
+    
+    const instanceId = parseInt(instance_id);
+    const keyId = parseInt(key_id);
+    
+    if (isNaN(instanceId) || instanceId <= 0 || isNaN(keyId) || keyId <= 0) {
+      return res.status(400).json({
+        error: 'Invalid parameters',
+        message: 'instance_id and key_id must be positive numbers'
+      });
+    }
+
+    // Only allow agents to revoke their own API keys
+    if (req.agentAuth.instanceId !== instanceId) {
+      return res.status(403).json({
+        error: 'Unauthorized',
+        message: 'You can only revoke API keys for your own instance'
+      });
+    }
+
+    const result = await dbHelpers.revokeApiKey(keyId, instanceId);
+
+    if (!result.success) {
+      return res.status(404).json({
+        error: 'API key not found',
+        message: 'No API key found with the specified ID for your instance'
+      });
+    }
+
+    res.json({
+      message: 'API key revoked successfully',
+      key_id: keyId,
+      revoked_at: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Error revoking API key:', error);
+    res.status(500).json({
+      error: 'Failed to revoke API key',
+      message: error.message
+    });
+  }
+});
+
+// GET /api/communication/logs - Get communication logs (for debugging)
+app.get('/api/communication/logs', validateApiKey, async (req, res) => {
+  try {
+    const {
+      event_type,
+      limit = 50,
+      offset = 0,
+      since
+    } = req.query;
+
+    // Only allow agents to see logs involving their instance
+    const logs = await dbHelpers.getCommunicationLogs({
+      event_type,
+      from_instance_id: req.agentAuth.instanceId,
+      to_instance_id: req.agentAuth.instanceId,
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      since
+    });
+
+    // Filter logs to only include those involving this instance
+    const filteredLogs = logs.filter(log => 
+      log.from_instance_id === req.agentAuth.instanceId || 
+      log.to_instance_id === req.agentAuth.instanceId
+    );
+
+    res.json({
+      message: `Found ${filteredLogs.length} communication log(s)`,
+      instance_id: req.agentAuth.instanceId,
+      logs: filteredLogs,
+      count: filteredLogs.length,
+      pagination: {
+        limit: parseInt(limit),
+        offset: parseInt(offset)
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching communication logs:', error);
+    res.status(500).json({
+      error: 'Failed to fetch communication logs',
+      message: error.message
+    });
+  }
+});
+
+// GET /api/communication/stats - Get communication statistics
+app.get('/api/communication/stats', validateApiKey, async (req, res) => {
+  try {
+    const { time_range = '24h' } = req.query;
+    
+    const stats = await dbHelpers.getCommunicationStats(time_range);
+
+    res.json({
+      message: 'Communication statistics retrieved successfully',
+      time_range,
+      statistics: stats,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Error fetching communication stats:', error);
+    res.status(500).json({
+      error: 'Failed to fetch communication statistics',
       message: error.message
     });
   }

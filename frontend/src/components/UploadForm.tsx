@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import LoadingSpinner from './LoadingSpinner';
+import CapabilitySelector from './CapabilitySelector';
 
 interface FormData {
   name: string;
   description: string;
   category: string;
+  capabilities: number[];
 }
 
 interface FormErrors {
@@ -25,7 +27,8 @@ const UploadForm: React.FC = () => {
   const [formData, setFormData] = useState<FormData>({
     name: '',
     description: '',
-    category: ''
+    category: '',
+    capabilities: []
   });
   
   const [file, setFile] = useState<File | null>(null);
@@ -64,6 +67,13 @@ const UploadForm: React.FC = () => {
         [name]: undefined
       }));
     }
+  };
+
+  const handleCapabilitiesChange = (capabilities: number[]) => {
+    setFormData(prev => ({
+      ...prev,
+      capabilities
+    }));
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -165,6 +175,7 @@ const UploadForm: React.FC = () => {
       uploadFormData.append('description', formData.description.trim());
       uploadFormData.append('category', formData.category);
       uploadFormData.append('author_name', user?.name || 'Anonymous');
+      uploadFormData.append('capabilities', JSON.stringify(formData.capabilities));
       uploadFormData.append('file', file!);
       
       // Simulate upload progress (since we don't have actual progress from API)
@@ -254,7 +265,8 @@ const UploadForm: React.FC = () => {
     setFormData({
       name: '',
       description: '',
-      category: ''
+      category: '',
+      capabilities: []
     });
     setFile(null);
     setErrors({});
@@ -395,7 +407,23 @@ const UploadForm: React.FC = () => {
             )}
           </div>
 
-
+          {/* Capabilities */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Agent Capabilities
+              <span className="text-sm font-normal text-gray-500 ml-1">(optional)</span>
+            </label>
+            <div className="border border-gray-300 rounded-lg p-4">
+              <CapabilitySelector
+                selectedCapabilities={formData.capabilities}
+                onCapabilitiesChange={handleCapabilitiesChange}
+                disabled={loading}
+              />
+            </div>
+            <p className="mt-2 text-xs text-gray-500">
+              Select the capabilities that your agent provides. This helps users discover your agent more easily.
+            </p>
+          </div>
 
           {/* File Upload */}
           <div>
