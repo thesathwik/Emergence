@@ -48,7 +48,7 @@ async function sendVerificationEmail(email, name, token, baseUrl) {
   const verificationUrl = `${baseUrl}/verify-email?token=${token}`;
   
   const mailOptions = {
-    from: `"Emergence" <${process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER}>`,
+    from: `"Emergence Platform" <noreply@emergence.com>`,
     to: email,
     subject: 'Verify your email address - Emergence',
     html: `
@@ -139,7 +139,7 @@ async function sendPasswordResetEmail(email, name, token, baseUrl) {
   const resetUrl = `${baseUrl}/reset-password?token=${token}`;
   
   const mailOptions = {
-    from: `"Emergence" <${process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER}>`,
+    from: `"Emergence Platform" <noreply@emergence.com>`,
     to: email,
     subject: 'Reset your password - Emergence',
     html: `
