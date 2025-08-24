@@ -94,6 +94,7 @@ const Register: React.FC = () => {
   const [verificationInfo, setVerificationInfo] = useState<{
     verificationUrl?: string;
     emailSent: boolean;
+    requiresVerification: boolean;
   } | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
