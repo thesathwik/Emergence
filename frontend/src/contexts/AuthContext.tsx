@@ -165,15 +165,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       const response = await authService.register(credentials);
       
-      // Don't store token or set auth state - user must verify first
-      dispatch({ type: 'AUTH_FAILURE', payload: 'Please verify your email before logging in' });
-
-      // Return verification info
-      return {
-        verificationUrl: response.verificationUrl,
-        emailSent: response.emailSent ?? false,
-        requiresVerification: response.requiresVerification ?? true
-      };
+      // Check if registration returned a token (email verification disabled)
+      if (response.token && response.user?.isVerified) {
+        // Store token and authenticate user immediately
+        localStorage.setItem('authToken', response.token);
+        dispatch({
+          type: 'AUTH_SUCCESS',
+          payload: { user: response.user, token: response.token },
+        });
+        
+        return {
+          verificationUrl: undefined,
+          emailSent: false,
+          requiresVerification: false
+        };
+      } else {
+        // Email verification is required (old flow)
+        dispatch({ type: 'AUTH_FAILURE', payload: 'Please verify your email before logging in' });
+        
+        return {
+          verificationUrl: response.verificationUrl,
+          emailSent: response.emailSent ?? false,
+          requiresVerification: response.requiresVerification ?? true
+        };
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Registration failed';
       dispatch({ type: 'AUTH_FAILURE', payload: errorMessage });
