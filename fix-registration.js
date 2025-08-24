@@ -1,7 +1,7 @@
 const sqlite3 = require('sqlite3').verbose();
 
 // Quick script to fix stuck registration issue
-const db = new sqlite3.Database('./emergence.db');
+const db = new sqlite3.Database('./database.sqlite');
 
 // Get the email you're trying to register with
 const email = process.argv[2];
