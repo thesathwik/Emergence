@@ -74,7 +74,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
 // Auth context interface
 interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
-  register: (credentials: RegisterCredentials) => Promise<{ verificationUrl?: string; emailSent: boolean }>;
+  register: (credentials: RegisterCredentials) => Promise<{ verificationUrl?: string; emailSent: boolean; requiresVerification: boolean }>;
   logout: () => void;
   clearError: () => void;
   checkAuthStatus: () => Promise<void>;
