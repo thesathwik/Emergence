@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { Agent, SingleAgentResponse } from '../types';
 
+
 const AgentDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [agent, setAgent] = useState<Agent | null>(null);
@@ -22,6 +23,7 @@ const AgentDetailPage: React.FC = () => {
     try {
       const response: SingleAgentResponse = await apiService.getAgent(id);
       setAgent(response.agent);
+      
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || 'Failed to fetch agent');
       console.error('Error fetching agent:', err);
@@ -84,6 +86,7 @@ const AgentDetailPage: React.FC = () => {
     setDownloadSuccess(false);
     setDownloadProgress(0);
   };
+  
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
@@ -398,6 +401,7 @@ const AgentDetailPage: React.FC = () => {
           </div>
         </div>
       </div>
+
 
       {/* Agent Details */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

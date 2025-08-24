@@ -23,7 +23,7 @@ const MobileNav: React.FC = () => {
       name: 'Upload',
       path: '/upload',
       icon: 'M12 4v16m8-8H4'
-    }
+    },
   ];
 
   return (
