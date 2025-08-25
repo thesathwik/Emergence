@@ -6,7 +6,6 @@ import AgentCard, { AgentCardCompact } from '../components/AgentCard';
 import CategoryFilter from '../components/CategoryFilter';
 import { useCategoryCounts } from '../hooks/useCategoryCounts';
 import { useAuth } from '../contexts/AuthContext';
-import LoadingSpinner from '../components/LoadingSpinner';
 
 const BrowseAgentsPage: React.FC = () => {
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -103,294 +102,366 @@ const BrowseAgentsPage: React.FC = () => {
   const filteredAndSortedAgents = sortAgents(filteredAgents);
 
   return (
-    <div>
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Browse AI Agents</h1>
-        <p className="text-gray-600">Discover and download AI agents from our community</p>
+    <div className="min-h-screen bg-white antialiased">
+      {/* Hero Section - Perfect Typography & Spacing */}
+      <div className="relative overflow-hidden">
+        <div className="max-w-6xl mx-auto px-8 py-32 text-center">
+          <h1 className="text-7xl font-extralight text-gray-900 mb-12 tracking-tight leading-none">
+            Agent Marketplace
+          </h1>
+          <p className="text-xl text-gray-500 font-light max-w-3xl mx-auto leading-relaxed mb-16">
+            Discover intelligent agents crafted by our community. Each one designed to solve real problems, 
+            ready to integrate into your workflow.
+          </p>
+          
+          {/* Perfect divider - Apple-style */}
+          <div className="w-16 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent mx-auto"></div>
+        </div>
       </div>
 
-      {/* Filters and Search */}
-      <div className="bg-white shadow rounded-lg p-6 mb-6">
-        {/* User Stats (if authenticated) */}
-        {isAuthenticated && user && (
-          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center">
-                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-blue-900">Welcome back, {user.name}!</p>
-                    <p className="text-xs text-blue-700">
-                      You have uploaded {agents.filter(agent => agent.user_id === user.id).length} agent{agents.filter(agent => agent.user_id === user.id).length !== 1 ? 's' : ''}
-                    </p>
-                  </div>
+      {/* User Welcome Section - Minimal & Elegant */}
+      {isAuthenticated && user && (
+        <section className="py-16 bg-gray-50/30">
+          <div className="max-w-4xl mx-auto px-8 text-center">
+            <h2 className="text-3xl font-light text-gray-900 mb-8 tracking-tight">
+              Welcome back, <span className="font-medium">{user.name}</span>
+            </h2>
+            <div className="flex items-center justify-center space-x-12 mb-12">
+              <div className="text-center">
+                <div className="text-4xl font-extralight text-gray-900 mb-2">
+                  {agents.filter(agent => agent.user_id === user.id).length}
                 </div>
+                <p className="text-gray-500 font-light">
+                  {agents.filter(agent => agent.user_id === user.id).length === 1 ? 'Agent Created' : 'Agents Created'}
+                </p>
               </div>
-              <Link
-                to="/upload"
-                className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Upload New Agent
-              </Link>
+              <div className="w-px h-12 bg-gray-200"></div>
+              <div className="text-center">
+                <div className="text-4xl font-extralight text-gray-900 mb-2">
+                  {agents.filter(agent => agent.user_id === user.id).reduce((sum, agent) => sum + agent.download_count, 0)}
+                </div>
+                <p className="text-gray-500 font-light">Total Downloads</p>
+              </div>
             </div>
+            <Link
+              to="/upload"
+              className="inline-flex items-center justify-center bg-gray-900 text-white px-8 py-4 rounded-2xl font-light hover:bg-gray-800 transition-all duration-300 no-underline shadow-sm hover:shadow-md transform hover:scale-[1.02]"
+            >
+              <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              Create New Agent
+            </Link>
           </div>
-        )}
+        </section>
+      )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Search */}
-          <div className="sm:col-span-2">
-            <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">
-              Search Agents
-            </label>
-            <div className="flex">
+      {/* Search & Filter Section - Clean Interface */}
+      <section className="py-16">
+        <div className="max-w-6xl mx-auto px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-5xl font-extralight text-gray-900 mb-8 tracking-tight leading-tight">
+              Find Your Perfect Agent
+            </h2>
+          </div>
+
+          {/* Perfect Search Interface */}
+          <div className="max-w-4xl mx-auto mb-16">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                </svg>
+              </div>
               <input
                 type="text"
-                id="search"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Search by name, description, or author..."
+                className="block w-full pl-14 pr-20 py-6 bg-gray-50/50 border border-gray-200/50 rounded-3xl text-lg font-light placeholder-gray-400 focus:outline-none focus:ring-0 focus:border-gray-300 focus:bg-white transition-all duration-300"
+                placeholder="Search agents by name, description, or author..."
               />
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                <button
+                  onClick={handleSearch}
+                  className="bg-gray-900 text-white px-6 py-3 rounded-2xl font-light hover:bg-gray-800 transition-all duration-200"
+                >
+                  Search
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Refined Filter Controls */}
+          <div className="flex flex-col lg:flex-row items-center justify-center space-y-6 lg:space-y-0 lg:space-x-12 mb-16">
+            {/* Category Filter */}
+            <div className="flex items-center space-x-4">
+              <span className="text-gray-500 font-light">Category</span>
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100/50 overflow-hidden">
+                <CategoryFilter
+                  variant="dropdown"
+                  showCount={true}
+                  onCategoryChange={handleCategoryChange}
+                  selectedCategory={selectedCategory}
+                  categoryCounts={categoryCounts}
+                  className="border-none focus:ring-0 bg-transparent px-4 py-3 font-light text-gray-900"
+                />
+              </div>
+            </div>
+
+            {/* Sort Control */}
+            <div className="flex items-center space-x-4">
+              <span className="text-gray-500 font-light">Sort by</span>
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100/50 overflow-hidden">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as 'name' | 'downloads' | 'date')}
+                  className="border-none focus:ring-0 bg-transparent px-4 py-3 font-light text-gray-900 cursor-pointer"
+                >
+                  <option value="date">Latest</option>
+                  <option value="name">Name</option>
+                  <option value="downloads">Most Downloaded</option>
+                </select>
+              </div>
+            </div>
+
+            {/* My Agents Filter */}
+            {isAuthenticated && (
+              <div className="flex items-center space-x-4">
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showMyAgents}
+                    onChange={(e) => setShowMyAgents(e.target.checked)}
+                    className="sr-only"
+                  />
+                  <div className={`relative w-12 h-6 rounded-full transition-all duration-200 ${
+                    showMyAgents ? 'bg-gray-900' : 'bg-gray-200'
+                  }`}>
+                    <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform duration-200 ${
+                      showMyAgents ? 'transform translate-x-6' : ''
+                    }`}></div>
+                  </div>
+                  <span className="ml-3 text-gray-500 font-light">My Agents Only</span>
+                </label>
+              </div>
+            )}
+          </div>
+
+          {/* Active Filters - Minimal Display */}
+          {(selectedCategory || searchTerm || showMyAgents) && (
+            <div className="flex flex-wrap items-center justify-center space-x-3 mb-12">
+              <span className="text-gray-400 font-light text-sm">Active:</span>
+              {selectedCategory && (
+                <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-light bg-gray-100 text-gray-700">
+                  {selectedCategory}
+                  <button
+                    onClick={() => setSelectedCategory('')}
+                    className="ml-2 text-gray-500 hover:text-gray-700"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </span>
+              )}
+              {searchTerm && (
+                <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-light bg-gray-100 text-gray-700">
+                  "{searchTerm}"
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="ml-2 text-gray-500 hover:text-gray-700"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </span>
+              )}
+              {showMyAgents && (
+                <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-light bg-gray-900 text-white">
+                  My Agents
+                  <button
+                    onClick={() => setShowMyAgents(false)}
+                    className="ml-2 text-gray-300 hover:text-white"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </span>
+              )}
               <button
-                onClick={handleSearch}
-                className="px-4 py-2 bg-blue-600 text-white rounded-r-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onClick={handleClearFilters}
+                className="text-sm text-gray-400 hover:text-gray-600 font-light underline"
               >
-                Search
+                Clear all
               </button>
             </div>
-          </div>
-
-          {/* Category Filter */}
-          <div>
-            <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
-              Category
-            </label>
-            <CategoryFilter
-              variant="dropdown"
-              showCount={true}
-              onCategoryChange={handleCategoryChange}
-              selectedCategory={selectedCategory}
-              categoryCounts={categoryCounts}
-              className="w-full"
-            />
-          </div>
-
-          {/* Sort By */}
-          <div>
-            <label htmlFor="sort" className="block text-sm font-medium text-gray-700 mb-2">
-              Sort By
-            </label>
-            <select
-              id="sort"
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as 'name' | 'downloads' | 'date')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="date">Date Created</option>
-              <option value="name">Name</option>
-              <option value="downloads">Downloads</option>
-            </select>
-          </div>
+          )}
         </div>
+      </section>
 
-        {/* My Agents Filter (for authenticated users) */}
-        {isAuthenticated && (
-          <div className="mt-4">
-            <div className="flex items-center space-x-4">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={showMyAgents}
-                  onChange={(e) => setShowMyAgents(e.target.checked)}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <span className="ml-2 text-sm font-medium text-gray-700">
-                  Show only my agents ({agents.filter(agent => agent.user_id === user?.id).length})
-                </span>
-              </label>
-            </div>
+      {/* Loading State - Minimal */}
+      {loading && (
+        <section className="py-32">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-gray-900 mb-6"></div>
+            <p className="text-gray-500 font-light">Loading agents...</p>
           </div>
-        )}
+        </section>
+      )}
 
-        {/* Active Filters Display */}
-        {(selectedCategory || searchTerm || showMyAgents) && (
-          <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
-                  </svg>
-                  <span className="text-sm font-medium text-blue-800">Active Filters:</span>
-                </div>
-                <div className="flex items-center space-x-2">
+      {/* Error State - Clean */}
+      {error && (
+        <section className="py-32">
+          <div className="text-center max-w-md mx-auto">
+            <div className="w-16 h-16 bg-red-50/80 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-light text-gray-900 mb-4">Something went wrong</h3>
+            <p className="text-gray-500 font-light mb-8">{error}</p>
+            <button
+              onClick={() => fetchAgents()}
+              className="bg-gray-900 text-white px-6 py-3 rounded-2xl font-light hover:bg-gray-800 transition-all duration-200"
+            >
+              Try Again
+            </button>
+          </div>
+        </section>
+      )}
+
+      {/* Results Section - Perfect Typography */}
+      {!loading && !error && (
+        <section className="pb-32">
+          <div className="max-w-6xl mx-auto px-8">
+            {/* Results Header */}
+            <div className="flex flex-col lg:flex-row items-center justify-between mb-16 space-y-6 lg:space-y-0">
+              <div className="text-center lg:text-left">
+                <h3 className="text-3xl font-light text-gray-900 mb-2">
+                  {filteredAndSortedAgents.length} Agent{filteredAndSortedAgents.length !== 1 ? 's' : ''}
                   {selectedCategory && (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      Category: {selectedCategory}
-                      <button
-                        onClick={() => setSelectedCategory('')}
-                        className="ml-1 text-blue-600 hover:text-blue-800"
-                      >
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </span>
+                    <span className="text-gray-500"> in {selectedCategory}</span>
                   )}
-                  {searchTerm && (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      Search: "{searchTerm}"
-                      <button
-                        onClick={() => setSearchTerm('')}
-                        className="ml-1 text-green-600 hover:text-green-800"
-                      >
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </span>
+                </h3>
+                <p className="text-gray-500 font-light">
+                  {searchTerm && `Matching "${searchTerm}"`}
+                  {showMyAgents && 'Your agents only'}
+                </p>
+              </div>
+              
+              {/* View Toggle - Apple Style */}
+              <div className="flex items-center space-x-4">
+                <span className="text-gray-400 font-light text-sm">View</span>
+                <div className="flex bg-gray-100 rounded-2xl p-1">
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`px-4 py-2 rounded-xl transition-all duration-200 ${
+                      viewMode === 'grid'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`px-4 py-2 rounded-xl transition-all duration-200 ${
+                      viewMode === 'list'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 17.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Agents Display - Clean Grid */}
+            {filteredAndSortedAgents.length > 0 && (
+              <>
+                {viewMode === 'grid' ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {filteredAndSortedAgents.map((agent) => (
+                      <AgentCard 
+                        key={agent.id} 
+                        agent={agent} 
+                        onDownloadSuccess={() => fetchAgents(selectedCategory)}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-6 max-w-4xl mx-auto">
+                    {filteredAndSortedAgents.map((agent) => (
+                      <AgentCardCompact 
+                        key={agent.id} 
+                        agent={agent} 
+                        onDownloadSuccess={() => fetchAgents(selectedCategory)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Empty State - Elegant */}
+            {filteredAndSortedAgents.length === 0 && (
+              <div className="text-center py-32">
+                <div className="w-24 h-24 bg-gray-50/80 rounded-3xl flex items-center justify-center mx-auto mb-8">
+                  <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0-1.125.504-1.125 1.125V11.25a9 9 0 00-9-9z" />
+                  </svg>
+                </div>
+                
+                <h3 className="text-2xl font-light text-gray-900 mb-4">
+                  {searchTerm ? 'No matches found' : 'No agents available'}
+                </h3>
+                
+                <p className="text-gray-500 font-light mb-12 max-w-md mx-auto leading-relaxed">
+                  {searchTerm ? (
+                    <>We couldn't find any agents matching "<span className="font-medium">{searchTerm}</span>". Try adjusting your search or exploring different categories.</>
+                  ) : showMyAgents ? (
+                    'You haven\'t created any agents yet. Upload your first agent to get started.'
+                  ) : selectedCategory ? (
+                    `No agents are currently available in the ${selectedCategory} category.`
+                  ) : (
+                    'Be the first to contribute an agent to our marketplace.'
                   )}
-                  {showMyAgents && (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                      My Agents Only
+                </p>
+
+                <div className="space-y-4">
+                  <Link
+                    to="/upload"
+                    className="inline-flex items-center justify-center bg-gray-900 text-white px-8 py-4 rounded-2xl font-light hover:bg-gray-800 transition-all duration-300 no-underline shadow-sm hover:shadow-md transform hover:scale-[1.02]"
+                  >
+                    <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    Create Agent
+                  </Link>
+                  
+                  {(searchTerm || selectedCategory || showMyAgents) && (
+                    <div>
                       <button
-                        onClick={() => setShowMyAgents(false)}
-                        className="ml-1 text-purple-600 hover:text-purple-800"
+                        onClick={handleClearFilters}
+                        className="text-gray-500 hover:text-gray-700 font-light underline"
                       >
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+                        Clear all filters
                       </button>
-                    </span>
+                    </div>
                   )}
                 </div>
               </div>
-              <button
-                onClick={handleClearFilters}
-                className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center space-x-1"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                <span>Clear All</span>
-              </button>
-            </div>
+            )}
           </div>
-        )}
-      </div>
-
-      {/* Error Display */}
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
-
-      {/* Loading State */}
-      {loading && (
-        <div className="text-center py-8">
-          <LoadingSpinner size="lg" color="blue" text="Loading agents..." />
-        </div>
-      )}
-
-      {/* Results Count and View Toggle */}
-      {!loading && (
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
-          <p className="text-gray-600">
-            Showing {filteredAndSortedAgents.length} agent{filteredAndSortedAgents.length !== 1 ? 's' : ''}
-            {selectedCategory && ` in ${selectedCategory}`}
-            {searchTerm && ` matching "${searchTerm}"`}
-            {showMyAgents && ' (your agents only)'}
-          </p>
-          
-          {/* View Toggle */}
-          <div className="flex items-center space-x-2 w-full sm:w-auto justify-center sm:justify-end">
-            <span className="text-sm text-gray-600">View:</span>
-            <div className="flex border border-gray-300 rounded-md">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`px-3 py-1 text-sm font-medium rounded-l-md transition-colors ${
-                  viewMode === 'grid'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                </svg>
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`px-3 py-1 text-sm font-medium rounded-r-md transition-colors ${
-                  viewMode === 'list'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Agents Display */}
-      {!loading && filteredAndSortedAgents.length > 0 && (
-        <>
-          {viewMode === 'grid' ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {filteredAndSortedAgents.map((agent) => (
-                <AgentCard 
-                  key={agent.id} 
-                  agent={agent} 
-                  onDownloadSuccess={() => fetchAgents(selectedCategory)}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="space-y-4 max-w-4xl">
-              {filteredAndSortedAgents.map((agent) => (
-                <AgentCardCompact 
-                  key={agent.id} 
-                  agent={agent} 
-                  onDownloadSuccess={() => fetchAgents(selectedCategory)}
-                />
-              ))}
-            </div>
-          )}
-        </>
-      )}
-
-      {/* Empty State */}
-      {!loading && filteredAndSortedAgents.length === 0 && !error && (
-        <div className="text-center py-12">
-          <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No agents found</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            {searchTerm ? `No agents matching "${searchTerm}".` : 'No agents available.'}
-          </p>
-          <div className="mt-6">
-            <Link
-              to="/upload"
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-            >
-              Upload Agent
-            </Link>
-          </div>
-        </div>
+        </section>
       )}
     </div>
   );
