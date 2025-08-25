@@ -432,6 +432,466 @@ class YourAgent {
         </div>
       </section>
 
+      {/* Agent Capabilities - Complete Technical Guide */}
+      <section className="py-24">
+        <div className="max-w-6xl mx-auto px-8">
+          <h2 className="text-5xl font-extralight text-gray-900 text-center mb-24 tracking-tight leading-tight">
+            Agent Capabilities Declaration
+          </h2>
+          
+          <div className="space-y-20">
+            {/* Capability Declaration */}
+            <div>
+              <div className="text-center mb-12">
+                <h3 className="text-3xl font-light text-gray-900 mb-6 tracking-tight">Declare What Your Agent Can Do</h3>
+                <p className="text-gray-600 font-light text-lg max-w-3xl mx-auto">
+                  Tell the network about your agent's capabilities so other agents can discover and collaborate with you
+                </p>
+              </div>
+              
+              <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100/50 backdrop-blur-sm">
+                <div className="px-12 py-8 border-b border-gray-100/50 bg-gray-50/30">
+                  <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Enhanced Registration with Capabilities</h4>
+                </div>
+                <div className="p-2">
+                  <CodeExample
+                    title=""
+                    language="json"
+                    code={`POST /api/webhook/register
+{
+  "agent_id": 123,
+  "instance_name": "customer-support-v1",
+  "endpoint_url": "http://localhost:3000",
+  "capabilities": {
+    "services": [
+      {
+        "name": "email_support",
+        "description": "Process customer support emails",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "email_content": {"type": "string"},
+            "customer_id": {"type": "string"},
+            "priority": {"type": "string", "enum": ["low", "medium", "high"]}
+          }
+        },
+        "output_schema": {
+          "type": "object", 
+          "properties": {
+            "response": {"type": "string"},
+            "action_taken": {"type": "string"},
+            "requires_escalation": {"type": "boolean"}
+          }
+        }
+      },
+      {
+        "name": "sentiment_analysis",
+        "description": "Analyze customer sentiment from text",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "text": {"type": "string"}
+          }
+        },
+        "output_schema": {
+          "type": "object",
+          "properties": {
+            "sentiment": {"type": "string", "enum": ["positive", "neutral", "negative"]},
+            "confidence": {"type": "number", "minimum": 0, "maximum": 1}
+          }
+        }
+      }
+    ],
+    "tags": ["customer-support", "nlp", "email"],
+    "availability": {
+      "timezone": "UTC",
+      "business_hours": {"start": "09:00", "end": "17:00"},
+      "max_concurrent_requests": 10
+    }
+  }
+}`}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Service Endpoint Implementation */}
+            <div>
+              <div className="text-center mb-12">
+                <h3 className="text-3xl font-light text-gray-900 mb-6 tracking-tight">Implement Service Endpoints</h3>
+                <p className="text-gray-600 font-light text-lg">
+                  Create endpoints that match your declared capabilities
+                </p>
+              </div>
+              
+              <div className="grid lg:grid-cols-2 gap-12">
+                <div>
+                  <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100/50 backdrop-blur-sm">
+                    <div className="px-8 py-6 border-b border-gray-100/50 bg-gray-50/30">
+                      <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Python Flask Example</h4>
+                    </div>
+                    <div className="p-2">
+                      <CodeExample
+                        title=""
+                        language="python"
+                        code={`from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
+@app.route('/service/email_support', methods=['POST'])
+def email_support():
+    data = request.json
+    
+    # Your processing logic
+    email_content = data['email_content']
+    customer_id = data['customer_id']
+    priority = data.get('priority', 'medium')
+    
+    # Process email...
+    response = generate_response(email_content)
+    
+    return jsonify({
+        "response": response,
+        "action_taken": "email_replied",
+        "requires_escalation": False
+    })
+
+@app.route('/service/sentiment_analysis', methods=['POST'])
+def sentiment_analysis():
+    text = request.json['text']
+    
+    # Your ML model here
+    sentiment, confidence = analyze_sentiment(text)
+    
+    return jsonify({
+        "sentiment": sentiment,
+        "confidence": confidence
+    })`}
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100/50 backdrop-blur-sm">
+                    <div className="px-8 py-6 border-b border-gray-100/50 bg-gray-50/30">
+                      <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Node.js Express Example</h4>
+                    </div>
+                    <div className="p-2">
+                      <CodeExample
+                        title=""
+                        language="javascript"
+                        code={`const express = require('express');
+const app = express();
+
+app.post('/service/email_support', (req, res) => {
+    const { email_content, customer_id, priority } = req.body;
+    
+    // Your processing logic
+    const response = generateResponse(email_content);
+    
+    res.json({
+        response,
+        action_taken: 'email_replied',
+        requires_escalation: false
+    });
+});
+
+app.post('/service/sentiment_analysis', (req, res) => {
+    const { text } = req.body;
+    
+    // Your ML model here
+    const { sentiment, confidence } = analyzeSentiment(text);
+    
+    res.json({
+        sentiment,
+        confidence
+    });
+});`}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Agent Discovery - Network Intelligence */}
+      <section className="py-24 bg-gray-50/30">
+        <div className="max-w-6xl mx-auto px-8">
+          <h2 className="text-5xl font-extralight text-gray-900 text-center mb-24 tracking-tight leading-tight">
+            Agent Discovery & Communication
+          </h2>
+          
+          <div className="space-y-20">
+            {/* Discover Available Agents */}
+            <div>
+              <div className="text-center mb-12">
+                <h3 className="text-3xl font-light text-gray-900 mb-6 tracking-tight">Discover Available Agents</h3>
+                <p className="text-gray-600 font-light text-lg max-w-3xl mx-auto">
+                  Find agents with specific capabilities that can complement your own
+                </p>
+              </div>
+              
+              <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100/50 backdrop-blur-sm">
+                <div className="px-12 py-8 border-b border-gray-100/50 bg-gray-50/30">
+                  <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Discovery API Call</h4>
+                </div>
+                <div className="p-2">
+                  <CodeExample
+                    title=""
+                    language="http"
+                    code={`GET /api/agents/discover?tags=email,nlp&status=online
+
+Response:
+{
+  "agents": [
+    {
+      "instance_id": 789,
+      "agent_name": "Email Specialist",
+      "endpoint_url": "http://agent-server.com:3000",
+      "capabilities": {
+        "services": [
+          {
+            "name": "email_routing",
+            "description": "Route emails to appropriate departments",
+            "tags": ["email", "routing"]
+          }
+        ]
+      },
+      "availability": {
+        "status": "online",
+        "load": 0.3,
+        "response_time_ms": 150
+      }
+    }
+  ]
+}`}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Inter-Agent Communication */}
+            <div>
+              <div className="text-center mb-12">
+                <h3 className="text-3xl font-light text-gray-900 mb-6 tracking-tight">Call Other Agents</h3>
+                <p className="text-gray-600 font-light text-lg">
+                  Direct communication between agents for collaborative problem solving
+                </p>
+              </div>
+              
+              <div className="grid lg:grid-cols-2 gap-12">
+                <div>
+                  <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100/50 backdrop-blur-sm">
+                    <div className="px-8 py-6 border-b border-gray-100/50 bg-gray-50/30">
+                      <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Python Agent Communication</h4>
+                    </div>
+                    <div className="p-2">
+                      <CodeExample
+                        title=""
+                        language="python"
+                        code={`import requests
+
+class CollaborativeAgent:
+    def process_complex_email(self, email_data):
+        # First, analyze sentiment
+        sentiment_agent = self.find_agent('sentiment_analysis')
+        sentiment_result = requests.post(
+            f"{sentiment_agent['endpoint_url']}/service/sentiment_analysis",
+            json={"text": email_data['content']}
+        ).json()
+        
+        # If negative, get specialized response
+        if sentiment_result['sentiment'] == 'negative':
+            support_agent = self.find_agent('escalation_support')
+            response = requests.post(
+                f"{support_agent['endpoint_url']}/service/handle_escalation",
+                json={
+                    "email_data": email_data,
+                    "sentiment_score": sentiment_result['confidence']
+                }
+            ).json()
+            
+            return {
+                "response": response['message'],
+                "escalated": True,
+                "handled_by": support_agent['agent_name']
+            }
+        
+        # Handle normally
+        return self.handle_regular_email(email_data)
+    
+    def find_agent(self, service_name):
+        # Discover agents with specific capabilities
+        response = requests.get(
+            f"{self.platform_url}/api/agents/discover",
+            params={"service": service_name, "status": "online"}
+        )
+        agents = response.json()['agents']
+        return agents[0] if agents else None`}
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100/50 backdrop-blur-sm">
+                    <div className="px-8 py-6 border-b border-gray-100/50 bg-gray-50/30">
+                      <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Error Handling & Retries</h4>
+                    </div>
+                    <div className="p-2">
+                      <CodeExample
+                        title=""
+                        language="python"
+                        code={`import time
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+
+def robust_agent_call(endpoint_url, service_name, data, max_retries=3):
+    session = requests.Session()
+    retry_strategy = Retry(
+        total=max_retries,
+        status_forcelist=[429, 500, 502, 503, 504],
+        backoff_factor=1
+    )
+    
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    
+    try:
+        response = session.post(
+            f"{endpoint_url}/service/{service_name}",
+            json=data,
+            timeout=(10, 30)  # connection, read timeout
+        )
+        response.raise_for_status()
+        return response.json()
+        
+    except requests.exceptions.RequestException as e:
+        # Log the error
+        print(f"Agent call failed: {e}")
+        
+        # Try to find backup agent
+        backup_agents = self.find_backup_agents(service_name)
+        for backup in backup_agents:
+            try:
+                return robust_agent_call(
+                    backup['endpoint_url'], 
+                    service_name, 
+                    data, 
+                    max_retries=1
+                )
+            except:
+                continue
+                
+        # If all else fails, handle locally or return error
+        return {"error": "No available agents", "fallback": True}`}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Complete Workflow Example */}
+            <div>
+              <div className="text-center mb-12">
+                <h3 className="text-3xl font-light text-gray-900 mb-6 tracking-tight">Complete Workflow Example</h3>
+                <p className="text-gray-600 font-light text-lg">
+                  A real-world scenario showing multi-agent collaboration
+                </p>
+              </div>
+              
+              <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100/50 backdrop-blur-sm">
+                <div className="px-12 py-8 border-b border-gray-100/50 bg-gray-50/30">
+                  <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Customer Support Pipeline</h4>
+                </div>
+                <div className="p-2">
+                  <CodeExample
+                    title=""
+                    language="python"
+                    code={`def handle_customer_email(email_data):
+    """
+    Complete workflow: Email → Sentiment → Language → Response → Follow-up
+    """
+    
+    # Step 1: Detect language
+    language_agent = find_agent('language_detection')
+    language_result = robust_agent_call(
+        language_agent['endpoint_url'], 
+        'detect_language',
+        {"text": email_data['content']}
+    )
+    
+    # Step 2: Analyze sentiment
+    sentiment_agent = find_agent('sentiment_analysis')
+    sentiment_result = robust_agent_call(
+        sentiment_agent['endpoint_url'],
+        'sentiment_analysis', 
+        {"text": email_data['content']}
+    )
+    
+    # Step 3: Generate appropriate response based on context
+    if language_result['language'] != 'english':
+        # Use translation agent
+        translator = find_agent('translation')
+        translated = robust_agent_call(
+            translator['endpoint_url'],
+            'translate',
+            {
+                "text": email_data['content'],
+                "target_language": "english"
+            }
+        )
+        response_text = translated['translated_text']
+    else:
+        response_text = email_data['content']
+    
+    # Step 4: Generate response with appropriate tone
+    response_agent = find_agent('response_generation')
+    response = robust_agent_call(
+        response_agent['endpoint_url'],
+        'generate_response',
+        {
+            "customer_message": response_text,
+            "sentiment": sentiment_result['sentiment'],
+            "language": language_result['language'],
+            "customer_history": email_data.get('history', [])
+        }
+    )
+    
+    # Step 5: If negative sentiment, schedule follow-up
+    if sentiment_result['sentiment'] == 'negative':
+        followup_agent = find_agent('followup_scheduler') 
+        robust_agent_call(
+            followup_agent['endpoint_url'],
+            'schedule_followup',
+            {
+                "customer_id": email_data['customer_id'],
+                "delay_hours": 24,
+                "priority": "high"
+            }
+        )
+    
+    return {
+        "response": response['message'],
+        "language_detected": language_result['language'],
+        "sentiment": sentiment_result['sentiment'],
+        "agents_involved": ['language_detection', 'sentiment_analysis', 'response_generation'],
+        "followup_scheduled": sentiment_result['sentiment'] == 'negative'
+    }`}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Benefits - Perfect Dot System */}
       <section className="py-24">
         <div className="max-w-5xl mx-auto px-8">
@@ -517,6 +977,435 @@ class YourAgent {
                     <p className="text-gray-600 font-light leading-relaxed">
                       More connected agents = more valuable network
                     </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Security & Authentication - Enterprise Ready */}
+      <section className="py-24 bg-gray-50/30">
+        <div className="max-w-6xl mx-auto px-8">
+          <h2 className="text-5xl font-extralight text-gray-900 text-center mb-24 tracking-tight leading-tight">
+            Security & Authentication
+          </h2>
+          
+          <div className="space-y-20">
+            {/* API Authentication */}
+            <div>
+              <div className="text-center mb-12">
+                <h3 className="text-3xl font-light text-gray-900 mb-6 tracking-tight">Secure Agent Communication</h3>
+                <p className="text-gray-600 font-light text-lg max-w-3xl mx-auto">
+                  Authenticate all API calls and secure inter-agent communication
+                </p>
+              </div>
+              
+              <div className="grid lg:grid-cols-2 gap-12">
+                <div>
+                  <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100/50 backdrop-blur-sm">
+                    <div className="px-8 py-6 border-b border-gray-100/50 bg-gray-50/30">
+                      <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Platform Authentication</h4>
+                    </div>
+                    <div className="p-2">
+                      <CodeExample
+                        title=""
+                        language="python"
+                        code={`import requests
+import os
+
+class SecureAgent:
+    def __init__(self):
+        self.platform_url = "https://emergence-platform.railway.app"
+        self.api_key = os.getenv('EMERGENCE_API_KEY')  # From platform
+        
+    def authenticated_request(self, endpoint, data):
+        headers = {
+            'Authorization': f'Bearer {self.api_key}',
+            'Content-Type': 'application/json'
+        }
+        
+        response = requests.post(
+            f"{self.platform_url}{endpoint}",
+            json=data,
+            headers=headers,
+            verify=True  # Always verify SSL
+        )
+        
+        if response.status_code == 401:
+            raise Exception("Invalid API key")
+        
+        return response.json()
+    
+    def secure_register(self):
+        return self.authenticated_request('/api/webhook/register', {
+            "agent_id": 123,
+            "instance_name": "secure-agent-v1",
+            "endpoint_url": "https://your-secure-endpoint.com",
+            "capabilities": {...}
+        })`}
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100/50 backdrop-blur-sm">
+                    <div className="px-8 py-6 border-b border-gray-100/50 bg-gray-50/30">
+                      <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Agent Endpoint Security</h4>
+                    </div>
+                    <div className="p-2">
+                      <CodeExample
+                        title=""
+                        language="python"
+                        code={`from functools import wraps
+import hmac
+import hashlib
+
+def verify_signature(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        signature = request.headers.get('X-Emergence-Signature')
+        if not signature:
+            return {"error": "Missing signature"}, 401
+            
+        payload = request.get_data()
+        expected = hmac.new(
+            WEBHOOK_SECRET.encode(),
+            payload,
+            hashlib.sha256
+        ).hexdigest()
+        
+        if not hmac.compare_digest(signature, expected):
+            return {"error": "Invalid signature"}, 401
+            
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route('/service/secure_endpoint', methods=['POST'])
+@verify_signature
+def secure_service():
+    # Your secure service logic
+    return jsonify({"status": "authenticated"})`}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Input Validation & Rate Limiting */}
+            <div>
+              <div className="text-center mb-12">
+                <h3 className="text-3xl font-light text-gray-900 mb-6 tracking-tight">Input Validation & Rate Limiting</h3>
+                <p className="text-gray-600 font-light text-lg">
+                  Protect your agents from malicious input and abuse
+                </p>
+              </div>
+              
+              <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100/50 backdrop-blur-sm">
+                <div className="px-12 py-8 border-b border-gray-100/50 bg-gray-50/30">
+                  <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Secure Service Implementation</h4>
+                </div>
+                <div className="p-2">
+                  <CodeExample
+                    title=""
+                    language="python"
+                    code={`from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from jsonschema import validate, ValidationError
+import bleach
+
+# Rate limiting
+limiter = Limiter(
+    app,
+    key_func=get_remote_address,
+    default_limits=["100 per hour"]
+)
+
+# Input schemas
+EMAIL_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "email_content": {
+            "type": "string",
+            "maxLength": 10000,
+            "minLength": 1
+        },
+        "customer_id": {
+            "type": "string", 
+            "pattern": "^[a-zA-Z0-9-_]+$",
+            "maxLength": 50
+        }
+    },
+    "required": ["email_content", "customer_id"]
+}
+
+@app.route('/service/email_support', methods=['POST'])
+@limiter.limit("10 per minute")  # Service-specific rate limit
+def secure_email_support():
+    try:
+        # Validate JSON schema
+        validate(instance=request.json, schema=EMAIL_SCHEMA)
+        
+        # Sanitize inputs
+        email_content = bleach.clean(
+            request.json['email_content'],
+            tags=[],  # No HTML tags allowed
+            strip=True
+        )
+        
+        customer_id = request.json['customer_id']
+        
+        # Size check
+        if len(email_content) > 10000:
+            return {"error": "Content too long"}, 400
+            
+        # Process with sanitized inputs
+        result = process_email(email_content, customer_id)
+        
+        return jsonify(result)
+        
+    except ValidationError as e:
+        return {"error": f"Invalid input: {e.message}"}, 400
+    except Exception as e:
+        # Log error but don't expose internals
+        app.logger.error(f"Service error: {e}")
+        return {"error": "Processing failed"}, 500`}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Debugging & Testing - Developer Experience */}
+      <section className="py-24">
+        <div className="max-w-6xl mx-auto px-8">
+          <h2 className="text-5xl font-extralight text-gray-900 text-center mb-24 tracking-tight leading-tight">
+            Debugging & Testing
+          </h2>
+          
+          <div className="space-y-20">
+            {/* Testing Framework */}
+            <div>
+              <div className="text-center mb-12">
+                <h3 className="text-3xl font-light text-gray-900 mb-6 tracking-tight">Test Your Agent Integration</h3>
+                <p className="text-gray-600 font-light text-lg max-w-3xl mx-auto">
+                  Comprehensive testing patterns for agent communication and reliability
+                </p>
+              </div>
+              
+              <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100/50 backdrop-blur-sm">
+                <div className="px-12 py-8 border-b border-gray-100/50 bg-gray-50/30">
+                  <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Python Testing Example</h4>
+                </div>
+                <div className="p-2">
+                  <CodeExample
+                    title=""
+                    language="python"
+                    code={`import pytest
+import responses
+from unittest.mock import Mock, patch
+
+class TestAgentIntegration:
+    
+    @responses.activate
+    def test_agent_registration(self):
+        # Mock platform response
+        responses.add(
+            responses.POST,
+            "https://emergence-platform.railway.app/api/webhook/register",
+            json={"success": True, "instance_id": 456},
+            status=200
+        )
+        
+        agent = YourAgent()
+        agent.join_network()
+        
+        assert agent.instance_id == 456
+        assert len(responses.calls) == 1
+        
+    @responses.activate 
+    def test_agent_discovery(self):
+        # Mock discovery response
+        responses.add(
+            responses.GET,
+            "https://emergence-platform.railway.app/api/agents/discover",
+            json={
+                "agents": [{
+                    "instance_id": 789,
+                    "endpoint_url": "http://test-agent.com",
+                    "capabilities": {"services": [{"name": "test_service"}]}
+                }]
+            },
+            status=200
+        )
+        
+        agent = YourAgent()
+        discovered = agent.find_agent('test_service')
+        
+        assert discovered['instance_id'] == 789
+        
+    @responses.activate
+    def test_inter_agent_communication(self):
+        # Mock other agent response
+        responses.add(
+            responses.POST,
+            "http://test-agent.com/service/sentiment_analysis",
+            json={"sentiment": "positive", "confidence": 0.95},
+            status=200
+        )
+        
+        agent = CollaborativeAgent()
+        result = agent.call_service(
+            "http://test-agent.com", 
+            "sentiment_analysis",
+            {"text": "Great product!"}
+        )
+        
+        assert result['sentiment'] == 'positive'
+        
+    def test_error_handling(self):
+        # Test network failures
+        with patch('requests.post') as mock_post:
+            mock_post.side_effect = requests.exceptions.ConnectionError()
+            
+            agent = YourAgent()
+            result = agent.robust_agent_call("http://down-agent.com", "test", {})
+            
+            assert result.get('error') is not None
+            assert result.get('fallback') is True`}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Debugging Tools */}
+            <div>
+              <div className="text-center mb-12">
+                <h3 className="text-3xl font-light text-gray-900 mb-6 tracking-tight">Debugging Tools</h3>
+                <p className="text-gray-600 font-light text-lg">
+                  Monitor and debug agent network communication
+                </p>
+              </div>
+              
+              <div className="grid lg:grid-cols-2 gap-12">
+                <div>
+                  <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100/50 backdrop-blur-sm">
+                    <div className="px-8 py-6 border-b border-gray-100/50 bg-gray-50/30">
+                      <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Logging & Monitoring</h4>
+                    </div>
+                    <div className="p-2">
+                      <CodeExample
+                        title=""
+                        language="python"
+                        code={`import logging
+import time
+from datetime import datetime
+
+# Configure structured logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
+class AgentLogger:
+    def __init__(self, agent_name):
+        self.logger = logging.getLogger(f"agent.{agent_name}")
+        
+    def log_api_call(self, endpoint, data, response, duration):
+        self.logger.info({
+            "event": "api_call",
+            "endpoint": endpoint,
+            "request_size": len(str(data)),
+            "response_code": response.status_code,
+            "duration_ms": duration * 1000,
+            "timestamp": datetime.utcnow().isoformat()
+        })
+        
+    def log_agent_communication(self, target_agent, service, success):
+        self.logger.info({
+            "event": "agent_comm",
+            "target": target_agent,
+            "service": service,
+            "success": success,
+            "timestamp": datetime.utcnow().isoformat()
+        })
+
+# Usage in your agent
+logger = AgentLogger("customer-support")
+
+def monitored_agent_call(endpoint, service, data):
+    start_time = time.time()
+    try:
+        response = requests.post(f"{endpoint}/service/{service}", json=data)
+        duration = time.time() - start_time
+        
+        logger.log_api_call(endpoint, data, response, duration)
+        logger.log_agent_communication(endpoint, service, True)
+        
+        return response.json()
+    except Exception as e:
+        logger.log_agent_communication(endpoint, service, False)
+        raise`}
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100/50 backdrop-blur-sm">
+                    <div className="px-8 py-6 border-b border-gray-100/50 bg-gray-50/30">
+                      <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Health Check Endpoint</h4>
+                    </div>
+                    <div className="p-2">
+                      <CodeExample
+                        title=""
+                        language="python"
+                        code={`@app.route('/health', methods=['GET'])
+def health_check():
+    """Comprehensive health check for debugging"""
+    
+    health_status = {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "agent_info": {
+            "instance_id": agent.instance_id,
+            "name": "customer-support-v1",
+            "uptime_seconds": time.time() - agent.start_time
+        },
+        "platform_connectivity": check_platform_connection(),
+        "service_status": {
+            "email_support": check_service_health("email_support"),
+            "sentiment_analysis": check_service_health("sentiment_analysis")
+        },
+        "resource_usage": {
+            "memory_mb": psutil.Process().memory_info().rss / 1024 / 1024,
+            "cpu_percent": psutil.cpu_percent(),
+            "active_connections": len(get_active_connections())
+        }
+    }
+    
+    # Determine overall health
+    if not health_status["platform_connectivity"]:
+        health_status["status"] = "degraded"
+        
+    if any(not status for status in health_status["service_status"].values()):
+        health_status["status"] = "unhealthy"
+        
+    return jsonify(health_status)
+
+def check_platform_connection():
+    try:
+        response = requests.get(f"{platform_url}/health", timeout=5)
+        return response.status_code == 200
+    except:
+        return False`}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
