@@ -4,9 +4,6 @@ import { apiService } from '../services/api';
 import { Agent, AgentsResponse } from '../types';
 import AgentCard from '../components/AgentCard';
 import CategoryFilter from '../components/CategoryFilter';
-import ErrorDisplay from '../components/ErrorDisplay';
-import LoadingSpinner from '../components/LoadingSpinner';
-import { SkeletonCard } from '../components/Skeleton';
 import { useCategoryCounts } from '../hooks/useCategoryCounts';
 
 const HomePage: React.FC = () => {
@@ -58,177 +55,229 @@ const HomePage: React.FC = () => {
 
 
   return (
-    <div>
-      {/* Hero Section */}
-      <div className="text-center mb-16">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-5xl md:text-6xl font-light text-gray-900 mb-6 tracking-wide">
-            AI Agents
+    <div className="min-h-screen bg-white antialiased">
+      {/* Hero Section - Perfect Typography & Spacing */}
+      <div className="relative overflow-hidden">
+        <div className="max-w-6xl mx-auto px-8 pt-32 pb-20 text-center">
+          <h1 className="text-8xl font-extralight text-gray-900 mb-8 tracking-tight leading-none">
+            Emergence
           </h1>
-          <p className="text-xl text-gray-500 mb-8 leading-relaxed font-light max-w-2xl mx-auto">
-            Discover intelligent agents designed to enhance your workflow.
+          <p className="text-2xl text-gray-500 font-light max-w-4xl mx-auto leading-relaxed mb-4">
+            The definitive marketplace for intelligent agents. 
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              to="/upload"
-              className="inline-flex items-center px-8 py-4 border border-gray-200 text-base font-light rounded-2xl text-gray-700 bg-white/80 backdrop-blur-sm hover:bg-white hover:shadow-lg transition-all duration-300"
-            >
-              <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
-              </svg>
-              Upload Agent
-            </Link>
+          <p className="text-xl text-gray-400 font-light max-w-3xl mx-auto leading-relaxed mb-16">
+            Discover, deploy, and connect AI agents that work together to solve complex problems.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6 mb-20">
             <Link
               to="/agents"
-              className="inline-flex items-center px-8 py-4 bg-gray-900 text-base font-light rounded-2xl text-white hover:bg-gray-800 shadow-lg transition-all duration-300"
+              className="inline-flex items-center justify-center bg-gray-900 text-white px-10 py-5 rounded-2xl font-light hover:bg-gray-800 transition-all duration-300 no-underline shadow-sm hover:shadow-md transform hover:scale-[1.02]"
             >
-              <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
               </svg>
-              Browse All
+              Explore Marketplace
+            </Link>
+            <Link
+              to="/upload"
+              className="inline-flex items-center justify-center border border-gray-200 text-gray-700 px-10 py-5 rounded-2xl font-light hover:bg-gray-50 hover:shadow-sm transition-all duration-300 no-underline"
+            >
+              <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              Create Agent
             </Link>
           </div>
+
+          {/* Perfect divider - Apple-style */}
+          <div className="w-24 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent mx-auto"></div>
         </div>
       </div>
 
-      {/* Category Filter */}
-      <div className="mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
-          <div>
-            <h2 className="text-3xl font-light text-gray-900 tracking-wide">AI Agents</h2>
-            <p className="text-base text-gray-500 mt-2 font-light">
-              {agents.length > 0 ? `${agents.length} agent${agents.length !== 1 ? 's' : ''} available` : 'Discover amazing AI agents'}
-              {selectedCategory && (
-                <span className="ml-2 text-gray-600 font-light">
-                  • Filtered by: {selectedCategory}
-                </span>
-              )}
+      {/* Featured Agents Section - Clean Design */}
+      <section className="py-16">
+        <div className="max-w-6xl mx-auto px-8">
+          {/* Section Header */}
+          <div className="text-center mb-16">
+            <h2 className="text-5xl font-extralight text-gray-900 mb-8 tracking-tight leading-tight">
+              Featured Agents
+            </h2>
+            <p className="text-xl text-gray-500 font-light max-w-2xl mx-auto leading-relaxed">
+              Handpicked intelligent agents ready to enhance your workflow
             </p>
           </div>
-          <div className="flex items-center space-x-4">
-            <CategoryFilter
-              variant="dropdown"
-              showCount={true}
-              onCategoryChange={handleCategoryChange}
-              selectedCategory={selectedCategory}
-              categoryCounts={categoryCounts}
-              className="min-w-[200px]"
-            />
 
-          </div>
-        </div>
-
-        {/* Active Filter Display */}
-        {selectedCategory && (
-          <div className="mt-6 bg-gray-50/50 backdrop-blur-sm border border-gray-100 rounded-2xl p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
-                </svg>
-                <span className="text-sm font-light text-gray-700">
-                  Active Filter: <span className="font-medium">{selectedCategory}</span>
-                </span>
-                <span className="text-xs text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full font-light">
-                  {agents.length} result{agents.length !== 1 ? 's' : ''}
-                </span>
+          {/* Filter Controls - Minimal Design */}
+          <div className="flex flex-col lg:flex-row items-center justify-between mb-12 space-y-6 lg:space-y-0">
+            <div className="text-center lg:text-left">
+              <div className="text-3xl font-extralight text-gray-900 mb-2">
+                {agents.length} Agent{agents.length !== 1 ? 's' : ''}
               </div>
-              <button
-                onClick={handleClearFilter}
-                className="text-sm text-gray-500 hover:text-gray-700 font-light flex items-center space-x-2 transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                <span>Clear Filter</span>
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Error Display */}
-      {error && (
-        <ErrorDisplay
-          error={{ message: error }}
-          title="Error loading agents"
-          onRetry={() => fetchAgents(selectedCategory || undefined)}
-          onDismiss={() => setError(null)}
-          className="mb-6"
-        />
-      )}
-
-      {/* Loading State */}
-      {loading && (
-        <div className="space-y-6">
-          <div className="text-center py-8">
-            <LoadingSpinner size="lg" className="mb-4" />
-            <p className="text-gray-600 text-lg">Loading agents</p>
-            <p className="text-gray-500 text-sm mt-1">Please wait while we fetch the latest data</p>
-          </div>
-          
-          {/* Skeleton Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array.from({ length: 6 }).map((_, index) => (
-              <SkeletonCard key={index} />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Agents Grid */}
-      {!loading && agents.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-          {agents.map((agent) => (
-            <AgentCard 
-              key={agent.id} 
-              agent={agent} 
-              onDownloadSuccess={() => fetchAgents(selectedCategory || undefined)}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Empty State */}
-      {!loading && agents.length === 0 && !error && (
-        <div className="text-center py-20">
-          <div className="max-w-md mx-auto">
-            <div className="mx-auto h-20 w-20 bg-gray-50/50 rounded-3xl flex items-center justify-center mb-8">
-              <svg className="h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-light text-gray-900 mb-3 tracking-wide">
-              {selectedCategory ? `No agents in ${selectedCategory}` : 'No agents found'}
-            </h3>
-            <p className="text-gray-500 mb-10 font-light">
-              {selectedCategory 
-                ? `Try selecting a different category or upload a new agent.`
-                : 'Get started by uploading your first AI agent.'
-              }
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                to="/upload"
-                className="inline-flex items-center px-6 py-3 border border-gray-200 text-sm font-light rounded-2xl text-gray-700 bg-white/80 backdrop-blur-sm hover:bg-white hover:shadow-lg transition-all duration-300"
-              >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
-                </svg>
-                Upload Agent
-              </Link>
               {selectedCategory && (
-                <button
-                  onClick={() => handleCategoryChange('')}
-                  className="inline-flex items-center px-6 py-3 border border-gray-200 text-sm font-light rounded-2xl text-gray-700 bg-white/80 backdrop-blur-sm hover:bg-white hover:shadow-lg transition-all duration-300"
-                >
-                  View All Categories
-                </button>
+                <p className="text-gray-500 font-light">in {selectedCategory}</p>
               )}
             </div>
+            
+            {/* Category Filter */}
+            <div className="flex items-center space-x-4">
+              <span className="text-gray-500 font-light">Category</span>
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100/50 overflow-hidden">
+                <CategoryFilter
+                  variant="dropdown"
+                  showCount={true}
+                  onCategoryChange={handleCategoryChange}
+                  selectedCategory={selectedCategory}
+                  categoryCounts={categoryCounts}
+                  className="border-none focus:ring-0 bg-transparent px-4 py-3 font-light text-gray-900 min-w-[180px]"
+                />
+              </div>
+            </div>
           </div>
+
+          {/* Active Filter - Minimal Display */}
+          {selectedCategory && (
+            <div className="flex items-center justify-center mb-12">
+              <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-light bg-gray-100 text-gray-700">
+                {selectedCategory}
+                <button
+                  onClick={handleClearFilter}
+                  className="ml-2 text-gray-500 hover:text-gray-700"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </span>
+            </div>
+          )}
+
+          {/* Error Display - Minimal & Elegant */}
+          {error && (
+            <div className="max-w-2xl mx-auto mb-12">
+              <div className="bg-red-50/30 border border-red-100/50 rounded-3xl p-8 backdrop-blur-sm">
+                <div className="flex items-center justify-center mb-4">
+                  <div className="h-12 w-12 bg-red-100/50 rounded-2xl flex items-center justify-center">
+                    <svg className="h-6 w-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                    </svg>
+                  </div>
+                </div>
+                <h3 className="text-2xl font-extralight text-gray-900 text-center mb-3 tracking-wide">
+                  Unable to Load Agents
+                </h3>
+                <p className="text-gray-600 text-center font-light mb-8">
+                  {error}
+                </p>
+                <div className="flex justify-center space-x-4">
+                  <button
+                    onClick={() => fetchAgents(selectedCategory || undefined)}
+                    className="inline-flex items-center px-6 py-3 bg-gray-900 text-white rounded-2xl font-light hover:bg-gray-800 transition-all duration-300 shadow-sm hover:shadow-md"
+                  >
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+                    </svg>
+                    Try Again
+                  </button>
+                  <button
+                    onClick={() => setError(null)}
+                    className="inline-flex items-center px-6 py-3 border border-gray-200 text-gray-700 rounded-2xl font-light hover:bg-gray-50 transition-all duration-300"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Loading State - Clean & Minimal */}
+          {loading && (
+            <div className="max-w-2xl mx-auto text-center py-20">
+              <div className="mb-8">
+                <div className="inline-flex h-16 w-16 bg-gray-50/50 rounded-3xl items-center justify-center mb-6">
+                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-gray-900"></div>
+                </div>
+                <h3 className="text-3xl font-extralight text-gray-900 mb-4 tracking-wide">
+                  Loading Agents
+                </h3>
+                <p className="text-gray-500 font-light text-lg">
+                  Discovering the latest intelligent agents
+                </p>
+              </div>
+              
+              {/* Elegant Skeleton Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mt-16">
+                {Array.from({ length: 8 }).map((_, index) => (
+                  <div key={index} className="animate-pulse">
+                    <div className="bg-gray-100/50 rounded-3xl aspect-[4/3] mb-6"></div>
+                    <div className="space-y-3">
+                      <div className="h-4 bg-gray-100/50 rounded-full w-3/4 mx-auto"></div>
+                      <div className="h-3 bg-gray-100/50 rounded-full w-1/2 mx-auto"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Agents Grid - Perfect Spacing */}
+          {!loading && agents.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+              {agents.map((agent) => (
+                <AgentCard 
+                  key={agent.id} 
+                  agent={agent} 
+                  onDownloadSuccess={() => fetchAgents(selectedCategory || undefined)}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Empty State - Elegant & Inspiring */}
+          {!loading && agents.length === 0 && !error && (
+            <div className="max-w-2xl mx-auto text-center py-24">
+              <div className="mb-12">
+                <div className="mx-auto h-24 w-24 bg-gray-50/50 rounded-3xl flex items-center justify-center mb-8">
+                  <svg className="h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <h3 className="text-4xl font-extralight text-gray-900 mb-6 tracking-wide">
+                  {selectedCategory ? `No ${selectedCategory} Agents` : 'No Agents Yet'}
+                </h3>
+                <p className="text-xl text-gray-500 font-light leading-relaxed mb-12">
+                  {selectedCategory 
+                    ? `We haven't found any agents in the ${selectedCategory} category. Try exploring other categories or be the first to contribute.`
+                    : 'Be the first to contribute an intelligent agent to our marketplace and help shape the future of AI collaboration.'
+                  }
+                </p>
+                <div className="flex flex-col sm:flex-row gap-6 justify-center">
+                  <Link
+                    to="/upload"
+                    className="inline-flex items-center px-8 py-4 bg-gray-900 text-white rounded-2xl font-light hover:bg-gray-800 transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-[1.02] no-underline"
+                  >
+                    <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    Create Your Agent
+                  </Link>
+                  {selectedCategory && (
+                    <button
+                      onClick={() => handleCategoryChange('')}
+                      className="inline-flex items-center px-8 py-4 border border-gray-200 text-gray-700 rounded-2xl font-light hover:bg-gray-50 hover:shadow-sm transition-all duration-300"
+                    >
+                      <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 4.5v15m6-15v15m-13.5-7.5h21" />
+                      </svg>
+                      Browse All Categories
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </section>
     </div>
   );
 };

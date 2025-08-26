@@ -869,7 +869,7 @@ app.get('/api/agents/category/:category', async (req, res) => {
 app.get('/api/agents/search/:term', async (req, res) => {
   try {
     const agents = await dbHelpers.searchAgents(req.params.term);
-    res.json(agents);
+    res.json({ agents, message: 'Agents retrieved successfully', count: agents.length });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -879,7 +879,7 @@ app.get('/api/agents/top/downloaded', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 10;
     const agents = await dbHelpers.getTopDownloadedAgents(limit);
-    res.json(agents);
+    res.json({ agents, message: 'Top agents retrieved successfully', count: agents.length });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
