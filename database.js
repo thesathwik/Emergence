@@ -1,8 +1,22 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const fs = require('fs');
 
-// Database configuration
-const DB_PATH = path.join(__dirname, 'database.sqlite');
+// Database configuration - use persistent volume in production
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'database.sqlite');
+
+// Ensure the directory exists for the database file
+const DB_DIR = path.dirname(DB_PATH);
+if (!fs.existsSync(DB_DIR)) {
+  fs.mkdirSync(DB_DIR, { recursive: true });
+  console.log(`Created database directory: ${DB_DIR}`);
+}
+
+console.log(`Database configuration:
+  Environment: ${process.env.NODE_ENV || 'development'}
+  Database path: ${DB_PATH}
+  Directory exists: ${fs.existsSync(DB_DIR)}
+`);
 
 // Create database connection
 const db = new sqlite3.Database(DB_PATH, (err) => {
@@ -10,6 +24,7 @@ const db = new sqlite3.Database(DB_PATH, (err) => {
     console.error('Error opening database:', err.message);
   } else {
     console.log('Connected to SQLite database.');
+    console.log('Database initialization completed.');
     initializeDatabase();
   }
 });
