@@ -2222,40 +2222,6 @@ app.get('/api/communication/stats', validateApiKey, async (req, res) => {
   }
 });
 
-// Serve React app for client-side routing in production
-if (process.env.NODE_ENV === 'production') {
-  // Handle all non-API routes by serving the React app
-  app.get(/^(?!\/api).*/, (req, res) => {
-    res.sendFile(path.join(__dirname, 'frontend/build/index.html'));
-  });
-} else {
-  // 404 handler for development
-  app.use('*', (req, res) => {
-    res.status(404).json({ error: 'Route not found' });
-  });
-}
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ 
-    error: 'Something went wrong!',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
-  });
-});
-
-// Graceful shutdown
-process.on('SIGINT', async () => {
-  console.log('Shutting down server...');
-  try {
-    await require('./database').closeDatabase();
-    process.exit(0);
-  } catch (err) {
-    console.error('Error closing database:', err.message);
-    process.exit(1);
-  }
-});
-
 // ============================================================================
 // AGENT PLATFORM ENDPOINTS - For Live Agent Registration & Discovery
 // ============================================================================
@@ -2464,6 +2430,41 @@ setInterval(() => {
     console.log(`[Platform] 🧹 Cleaned up ${cleanedUp} inactive agents`);
   }
 }, 5 * 60 * 1000);
+
+// Serve React app for client-side routing in production
+if (process.env.NODE_ENV === 'production') {
+  // Handle all non-API routes by serving the React app
+  app.get(/^(?!\/api).*/, (req, res) => {
+    res.sendFile(path.join(__dirname, 'frontend/build/index.html'));
+  });
+} else {
+  // 404 handler for development
+  app.use('*', (req, res) => {
+    res.status(404).json({ error: 'Route not found' });
+  });
+}
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ 
+    error: 'Something went wrong!',
+    message: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
+  });
+});
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  console.log('Shutting down server...');
+  try {
+    await require('./database').closeDatabase();
+    process.exit(0);
+  } catch (err) {
+    console.error('Error closing database:', err.message);
+    process.exit(1);
+  }
+});
+
 
 // Start server
 app.listen(PORT, () => {

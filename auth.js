@@ -15,7 +15,8 @@ const generateToken = (user) => {
   const payload = {
     userId: user.id,
     email: user.email,
-    name: user.name
+    name: user.name,
+    isVerified: true  // Always set as verified for launch
   };
 
   return jwt.sign(payload, JWT_SECRET, { 

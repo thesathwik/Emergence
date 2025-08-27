@@ -92,6 +92,43 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
+  // Check authentication status
+  const checkAuthStatus = async (): Promise<void> => {
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await authService.getProfile();
+      
+      if (response.success) {
+        dispatch({
+          type: 'AUTH_SUCCESS',
+          payload: {
+            user: response.user,
+            token
+          }
+        });
+      } else {
+        throw new Error('Auth check failed');
+      }
+    } catch (error) {
+      console.error('Auth status check failed:', error);
+      // Remove invalid token
+      localStorage.removeItem('authToken');
+      dispatch({ type: 'AUTH_FAILURE', payload: 'Authentication failed' });
+      throw error;
+    }
+  };
+
+  const logout = (): void => {
+    // Remove token from localStorage
+    localStorage.removeItem('authToken');
+    
+    dispatch({ type: 'AUTH_LOGOUT' });
+  };
+
   // Check if user is authenticated on mount
   useEffect(() => {
     const initializeAuth = async () => {
@@ -110,25 +147,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     initializeAuth();
   }, []);
 
-  // Check authentication status
-  const checkAuthStatus = async (): Promise<void> => {
-    try {
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        throw new Error('No token found');
-      }
-
-      const response = await authService.getProfile();
-      dispatch({
-        type: 'AUTH_SUCCESS',
-        payload: { user: response.user, token },
-      });
-    } catch (error) {
-      console.error('Auth status check failed:', error);
-      logout();
-      throw error;
-    }
-  };
 
   // Login function
   const login = async (credentials: LoginCredentials): Promise<void> => {
@@ -196,13 +214,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Logout function
-  const logout = (): void => {
-    // Remove token from localStorage
-    localStorage.removeItem('authToken');
-    
-    dispatch({ type: 'AUTH_LOGOUT' });
-  };
 
   // Clear error function
   const clearError = (): void => {

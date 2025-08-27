@@ -38,7 +38,7 @@ function initializeDatabase() {
       email TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
       name TEXT NOT NULL,
-      is_verified BOOLEAN DEFAULT 0,
+      is_verified BOOLEAN DEFAULT 1,
       verification_token TEXT,
       token_expires_at DATETIME,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
