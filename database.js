@@ -3,7 +3,32 @@ const path = require('path');
 const fs = require('fs');
 
 // Database configuration - use persistent volume in production
-const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'database.sqlite');
+let DB_PATH;
+if (process.env.NODE_ENV === 'production') {
+  // In production, always use the volume path even if DB_PATH env var isn't set
+  DB_PATH = process.env.DB_PATH || '/app/data/database.sqlite';
+  
+  // Ensure the volume mount directory exists in production
+  const volumeDir = '/app/data';
+  if (!fs.existsSync(volumeDir)) {
+    console.log(`⚠️  Volume directory ${volumeDir} doesn't exist, creating...`);
+    try {
+      fs.mkdirSync(volumeDir, { recursive: true });
+      console.log(`✅ Created volume directory: ${volumeDir}`);
+    } catch (error) {
+      console.error(`❌ Failed to create volume directory: ${error.message}`);
+      console.error(`   This may indicate the Railway volume is not properly mounted`);
+      // Fall back to container filesystem as last resort
+      console.log(`⚠️  Falling back to container filesystem: /app/database.sqlite`);
+      DB_PATH = '/app/database.sqlite';
+    }
+  } else {
+    console.log(`✅ Volume directory exists: ${volumeDir}`);
+  }
+} else {
+  // In development, use local path
+  DB_PATH = process.env.DB_PATH || path.join(__dirname, 'database.sqlite');
+}
 
 // Ensure the directory exists for the database file
 const DB_DIR = path.dirname(DB_PATH);
@@ -25,11 +50,13 @@ try {
 
 console.log(`📊 Database configuration:
   Environment: ${process.env.NODE_ENV || 'development'}
-  Database path: ${DB_PATH}
-  Directory: ${DB_DIR}
+  DB_PATH env var: ${process.env.DB_PATH || 'NOT SET'}
+  Resolved database path: ${DB_PATH}
+  Database directory: ${DB_DIR}
   Directory exists: ${fs.existsSync(DB_DIR)}
   Database file exists: ${fs.existsSync(DB_PATH)}
   Process CWD: ${process.cwd()}
+  Railway volume should be at: /app/data
 `);
 
 // Create database connection
