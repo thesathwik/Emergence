@@ -264,12 +264,40 @@ app.get('/', (req, res) => {
   res.json({ message: 'Backend server is running!' });
 });
 
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
-  });
+app.get('/api/health', async (req, res) => {
+  try {
+    const health = {
+      status: 'OK', 
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      environment: process.env.NODE_ENV || 'development'
+    };
+
+    // If detailed health check is requested
+    if (req.query.detailed === 'true') {
+      try {
+        const dbHealth = await dbHelpers.checkDatabaseHealth();
+        health.database = dbHealth;
+      } catch (dbError) {
+        console.error('Database health check failed:', dbError);
+        health.database = {
+          status: 'unhealthy',
+          error: dbError.message
+        };
+        health.status = 'DEGRADED';
+      }
+    }
+
+    const statusCode = health.status === 'OK' ? 200 : 503;
+    res.status(statusCode).json(health);
+  } catch (error) {
+    console.error('Health check error:', error);
+    res.status(503).json({
+      status: 'ERROR',
+      timestamp: new Date().toISOString(),
+      error: error.message
+    });
+  }
 });
 
 // Auth routes

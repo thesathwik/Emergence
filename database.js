@@ -7,24 +7,49 @@ const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'database.sqlite');
 
 // Ensure the directory exists for the database file
 const DB_DIR = path.dirname(DB_PATH);
-if (!fs.existsSync(DB_DIR)) {
-  fs.mkdirSync(DB_DIR, { recursive: true });
-  console.log(`Created database directory: ${DB_DIR}`);
+try {
+  if (!fs.existsSync(DB_DIR)) {
+    fs.mkdirSync(DB_DIR, { recursive: true });
+    console.log(`✅ Created database directory: ${DB_DIR}`);
+  }
+  
+  // Check directory permissions
+  fs.accessSync(DB_DIR, fs.constants.W_OK);
+  console.log(`✅ Database directory is writable: ${DB_DIR}`);
+} catch (error) {
+  console.error(`❌ Database directory error: ${error.message}`);
+  console.error(`   Directory: ${DB_DIR}`);
+  console.error(`   Current working directory: ${process.cwd()}`);
+  throw error;
 }
 
-console.log(`Database configuration:
+console.log(`📊 Database configuration:
   Environment: ${process.env.NODE_ENV || 'development'}
   Database path: ${DB_PATH}
+  Directory: ${DB_DIR}
   Directory exists: ${fs.existsSync(DB_DIR)}
+  Database file exists: ${fs.existsSync(DB_PATH)}
+  Process CWD: ${process.cwd()}
 `);
 
 // Create database connection
 const db = new sqlite3.Database(DB_PATH, (err) => {
   if (err) {
-    console.error('Error opening database:', err.message);
+    console.error('❌ Error opening database:', err.message);
+    console.error('   Database path:', DB_PATH);
+    console.error('   Error details:', err);
   } else {
-    console.log('Connected to SQLite database.');
-    console.log('Database initialization completed.');
+    console.log('✅ Connected to SQLite database.');
+    console.log(`📁 Database file: ${DB_PATH}`);
+    
+    // Check if this is a new database or existing
+    if (fs.existsSync(DB_PATH)) {
+      const stats = fs.statSync(DB_PATH);
+      console.log(`📈 Database file size: ${stats.size} bytes`);
+      console.log(`📅 Database last modified: ${stats.mtime}`);
+    }
+    
+    console.log('🚀 Starting database initialization...');
     initializeDatabase();
   }
 });
@@ -2485,6 +2510,103 @@ const dbHelpers = {
           resolve(stats);
         }
       });
+    });
+  },
+
+  // Database health check and persistence verification
+  checkDatabaseHealth: () => {
+    return new Promise(async (resolve, reject) => {
+      try {
+        console.log('🔍 Starting database health check...');
+        
+        // Check database connection
+        await testConnection();
+        console.log('✅ Database connection: OK');
+        
+        // Check if tables exist
+        const tables = await new Promise((resolve, reject) => {
+          db.all("SELECT name FROM sqlite_master WHERE type='table'", [], (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows.map(row => row.name));
+          });
+        });
+        
+        console.log('📋 Database tables:', tables.length);
+        const expectedTables = ['users', 'agents', 'capability_categories', 'agent_instances'];
+        const missingTables = expectedTables.filter(table => !tables.includes(table));
+        
+        if (missingTables.length > 0) {
+          console.log('⚠️  Missing tables:', missingTables);
+        } else {
+          console.log('✅ All core tables exist');
+        }
+        
+        // Check record counts
+        const userCount = await new Promise((resolve, reject) => {
+          db.get("SELECT COUNT(*) as count FROM users", [], (err, row) => {
+            if (err) reject(err);
+            else resolve(row.count);
+          });
+        });
+        
+        const agentCount = await new Promise((resolve, reject) => {
+          db.get("SELECT COUNT(*) as count FROM agents", [], (err, row) => {
+            if (err) reject(err);
+            else resolve(row.count);
+          });
+        });
+        
+        const capabilityCount = await new Promise((resolve, reject) => {
+          db.get("SELECT COUNT(*) as count FROM capability_categories", [], (err, row) => {
+            if (err) reject(err);
+            else resolve(row.count);
+          });
+        });
+        
+        console.log(`📊 Database statistics:
+  Users: ${userCount}
+  Agents: ${agentCount}  
+  Capabilities: ${capabilityCount}
+  Database file: ${DB_PATH}
+  Database size: ${fs.existsSync(DB_PATH) ? fs.statSync(DB_PATH).size : 0} bytes`);
+        
+        // Test write capability
+        const testId = Date.now();
+        await new Promise((resolve, reject) => {
+          db.run("INSERT INTO capability_categories (name, display_name, description, is_active) VALUES (?, ?, ?, ?)", 
+            [`test-${testId}`, `Test ${testId}`, `Health check test ${testId}`, 0], 
+            function(err) {
+              if (err) reject(err);
+              else resolve(this.lastID);
+            }
+          );
+        });
+        
+        // Remove test record
+        await new Promise((resolve, reject) => {
+          db.run("DELETE FROM capability_categories WHERE name = ?", [`test-${testId}`], (err) => {
+            if (err) reject(err);
+            else resolve();
+          });
+        });
+        
+        console.log('✅ Database write/delete test: OK');
+        console.log('🎉 Database health check completed successfully!');
+        
+        resolve({
+          status: 'healthy',
+          tables: tables.length,
+          users: userCount,
+          agents: agentCount,
+          capabilities: capabilityCount,
+          dbPath: DB_PATH,
+          dbSize: fs.existsSync(DB_PATH) ? fs.statSync(DB_PATH).size : 0
+        });
+        
+      } catch (error) {
+        console.error('❌ Database health check failed:', error);
+        reject(error);
+      }
     });
   }
 };
