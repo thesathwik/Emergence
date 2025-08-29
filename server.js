@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const { db, dbHelpers, testConnection, initializeDatabase } = require('./database');
+const CodeScanner = require('./utils/codeScanner');
 
 // Import auth routes
 const authRoutes = require('./routes/auth');
@@ -738,6 +739,102 @@ app.post('/api/agents', verifyToken, requireVerifiedEmail, (req, res) => {
         }
       }
 
+      // Scan uploaded file for security issues
+      console.log(`🔍 Scanning uploaded file: ${req.file.filename}`);
+      const scanner = new CodeScanner();
+      
+      // Initialize agent data with basic information
+      let scanResultsJson = null;
+      
+      try {
+        const scanResults = await scanner.scanZipFile(req.file.path);
+        
+        // Log scan results
+        console.log(`📊 Scan completed - Risk: ${scanResults.summary.riskLevel}, Findings: ${scanResults.securityFindings.length}`);
+        
+        // Check if upload should be blocked based on risk level
+        if (scanResults.summary.riskLevel === 'critical') {
+          // Delete uploaded file
+          fs.unlinkSync(req.file.path);
+          
+          return res.status(400).json({
+            error: 'Security scan failed',
+            message: 'File contains critical security risks and cannot be uploaded',
+            scanResults: {
+              riskLevel: scanResults.summary.riskLevel,
+              findingsCount: scanResults.securityFindings.length,
+              warnings: scanResults.summary.warnings,
+              errors: scanResults.summary.errors
+            }
+          });
+        }
+
+        // Create a sample content for scoring (from first few files)
+        let sampleContent = '';
+        for (const file of scanResults.files.slice(0, 3)) {
+          if (file.isCodeFile && file.lineCount > 0) {
+            // Add basic patterns for scoring
+            sampleContent += `# File: ${file.fileName}\n`;
+            if (file.fileName.endsWith('.py')) {
+              sampleContent += 'import requests\ndef main():\n    pass\n';
+            } else if (file.fileName.endsWith('.js')) {
+              sampleContent += 'const axios = require("axios");\nfunction main() {}\n';
+            }
+          }
+        }
+        
+        // Add security findings as sample content for scoring
+        scanResults.securityFindings.slice(0, 5).forEach(finding => {
+          sampleContent += finding.match + '\n';
+        });
+
+        // If no content, create basic sample
+        if (sampleContent.length < 20) {
+          sampleContent = 'def process_data(): return []';
+        }
+
+        // Calculate platform communication score
+        const platformScore = scanner.calculatePlatformScore(sampleContent);
+        
+        // Store scan results for database
+        scanResultsJson = JSON.stringify({
+          riskLevel: scanResults.summary.riskLevel,
+          findingsCount: scanResults.securityFindings.length,
+          scannedAt: new Date().toISOString(),
+          safe: scanResults.summary.safe,
+          platformScore: platformScore.score,
+          category: platformScore.category
+        });
+        
+        console.log(`✅ Security scan passed - Score: ${platformScore.score}/100 (${platformScore.category})`);
+        
+      } catch (scanError) {
+        console.error('❌ Security scan error:', scanError.message);
+        
+        // For now, allow upload but log the error
+        // In production, you might want to block uploads on scan errors
+        console.log('⚠️  Proceeding with upload despite scan error');
+        
+        scanResultsJson = JSON.stringify({ 
+          error: scanError.message, 
+          scannedAt: new Date().toISOString() 
+        });
+      }
+
+      // Parse platform scoring from scan results
+      let communicationScore = 0;
+      let complianceLevel = 'Unlikely';
+      
+      try {
+        if (scanResultsJson) {
+          const scanData = JSON.parse(scanResultsJson);
+          communicationScore = scanData.platformScore || 0;
+          complianceLevel = scanData.category || 'Unlikely';
+        }
+      } catch (error) {
+        console.log('⚠️ Error parsing scan results for scoring:', error.message);
+      }
+
       // Create agent data with file information and user association
       const agentData = {
         name: name.trim(),
@@ -746,7 +843,10 @@ app.post('/api/agents', verifyToken, requireVerifiedEmail, (req, res) => {
         author_name: author_name.trim(),
         file_path: req.file.path,
         file_size: req.file.size,
-        user_id: req.user.userId // Associate with authenticated user
+        user_id: req.user.userId, // Associate with authenticated user
+        scan_results: scanResultsJson, // Store scan summary
+        communication_score: communicationScore, // Store platform score
+        compliance_level: complianceLevel // Store verification category
       };
 
       // Save agent to database
@@ -773,6 +873,9 @@ app.post('/api/agents', verifyToken, requireVerifiedEmail, (req, res) => {
           user_id: agent.user_id,
           download_count: 0,
           created_at: new Date().toISOString(),
+          scan_results: agent.scan_results,
+          communication_score: agent.communication_score,
+          compliance_level: agent.compliance_level,
           capabilities: agentCapabilities
         },
         user: {

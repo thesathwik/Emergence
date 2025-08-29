@@ -413,6 +413,45 @@ function migrateAgentsTable() {
       } else {
         console.log('user_id column already exists in agents table.');
       }
+      
+      if (!columnNames.includes('scan_results')) {
+        console.log('Adding scan_results column to agents table...');
+        db.run('ALTER TABLE agents ADD COLUMN scan_results TEXT', (err) => {
+          if (err) {
+            console.error('Error adding scan_results column:', err.message);
+          } else {
+            console.log('Successfully added scan_results column to agents table.');
+          }
+        });
+      } else {
+        console.log('scan_results column already exists in agents table.');
+      }
+      
+      if (!columnNames.includes('communication_score')) {
+        console.log('Adding communication_score column to agents table...');
+        db.run('ALTER TABLE agents ADD COLUMN communication_score INTEGER DEFAULT 0', (err) => {
+          if (err) {
+            console.error('Error adding communication_score column:', err.message);
+          } else {
+            console.log('Successfully added communication_score column to agents table.');
+          }
+        });
+      } else {
+        console.log('communication_score column already exists in agents table.');
+      }
+      
+      if (!columnNames.includes('compliance_level')) {
+        console.log('Adding compliance_level column to agents table...');
+        db.run('ALTER TABLE agents ADD COLUMN compliance_level TEXT DEFAULT \'Unlikely\'', (err) => {
+          if (err) {
+            console.error('Error adding compliance_level column:', err.message);
+          } else {
+            console.log('Successfully added compliance_level column to agents table.');
+          }
+        });
+      } else {
+        console.log('compliance_level column already exists in agents table.');
+      }
     });
   });
 }
@@ -640,19 +679,31 @@ const dbHelpers = {
   // Create new agent
   createAgent: (agentData) => {
     return new Promise((resolve, reject) => {
-      const { name, description, category, author_name, file_path, file_size, user_id } = agentData;
+      const { 
+        name, description, category, author_name, file_path, file_size, user_id,
+        scan_results, communication_score, compliance_level 
+      } = agentData;
       
-      db.run(
-        'INSERT INTO agents (name, description, category, author_name, file_path, file_size, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [name, description, category, author_name, file_path, file_size, user_id],
-        function(err) {
-          if (err) {
-            reject(err);
-          } else {
-            resolve({ id: this.lastID, ...agentData });
-          }
+      // SQL with all columns (including new ones)
+      const sql = `INSERT INTO agents (
+        name, description, category, author_name, file_path, file_size, user_id,
+        scan_results, communication_score, compliance_level
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+      
+      const values = [
+        name, description, category, author_name, file_path, file_size, user_id,
+        scan_results || null,
+        communication_score || 0,
+        compliance_level || 'Unlikely'
+      ];
+      
+      db.run(sql, values, function(err) {
+        if (err) {
+          reject(err);
+        } else {
+          resolve({ id: this.lastID, ...agentData });
         }
-      );
+      });
     });
   },
 
