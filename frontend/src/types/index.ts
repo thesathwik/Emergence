@@ -10,6 +10,8 @@ export interface Agent {
   download_count: number;
   created_at: string;
   user_id?: number | null; // ID of the user who uploaded the agent
+  communication_score?: number;
+  compliance_level?: string;
 }
 
 // API response interfaces

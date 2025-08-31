@@ -181,6 +181,9 @@ class CodeScanner {
               });
 
               readStream.on('end', () => {
+                // Store the actual content for later use
+                fileAnalysis.content = fileContent;
+                
                 // Analyze file content
                 const contentAnalysis = this.analyzeFileContent(fileContent, entry.fileName);
                 Object.assign(fileAnalysis, contentAnalysis);
@@ -236,6 +239,58 @@ class CodeScanner {
       lastModified: entry.getLastModDate?.() || null,
       suspicious: this.isSuspiciousFileName(fileName)
     };
+  }
+
+  /**
+   * Extract content from zip file for platform scoring
+   * @param {string} zipPath - Path to the zip file
+   * @returns {Promise<string>} Combined content from all code files
+   */
+  async extractContentFromZip(zipPath) {
+    return new Promise((resolve, reject) => {
+      let combinedContent = '';
+      let processedFiles = 0;
+      let totalCodeFiles = 0;
+
+      const zip = new AdmZip(zipPath);
+      const entries = zip.getEntries();
+      
+      // Count code files first
+      for (const entry of entries) {
+        if (!entry.isDirectory && this.isCodeFile(entry.entryName) && entry.header.size > 0) {
+          totalCodeFiles++;
+        }
+      }
+
+      if (totalCodeFiles === 0) {
+        resolve('// No code files found');
+        return;
+      }
+
+      // Extract content from code files
+      for (const entry of entries) {
+        if (!entry.isDirectory && this.isCodeFile(entry.entryName) && entry.header.size > 0) {
+          try {
+            const content = entry.getData().toString('utf8');
+            combinedContent += `\n// File: ${entry.entryName}\n${content}\n`;
+            processedFiles++;
+            
+            if (processedFiles >= totalCodeFiles) {
+              resolve(combinedContent);
+              return;
+            }
+          } catch (err) {
+            console.warn(`Warning: Could not read ${entry.entryName}:`, err.message);
+            processedFiles++;
+            
+            if (processedFiles >= totalCodeFiles) {
+              resolve(combinedContent || '// Could not extract file content');
+              return;
+            }
+          }
+        }
+      }
+    });
   }
 
   /**

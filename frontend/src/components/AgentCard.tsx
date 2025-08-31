@@ -5,6 +5,8 @@ import { formatFileSize, formatDate, formatNumber } from '../utils/formatters';
 import { apiService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import LoadingSpinner from './LoadingSpinner';
+import ComplianceBadge from './ComplianceBadge';
+import ComplianceWarning from './ComplianceWarning';
 
 interface AgentCardProps {
   agent: Agent;
@@ -108,7 +110,10 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, className = '', onDownload
                   {agent.name}
                 </h3>
               </div>
-              <div className="flex justify-end items-center space-x-2">
+              <div className="flex justify-end items-center space-x-2 flex-wrap">
+                {/* Compliance Badge */}
+                <ComplianceBadge complianceLevel={agent.compliance_level} />
+                
                 {/* Your Agent Badge */}
                 {isUserAgent && (
                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
@@ -125,9 +130,16 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, className = '', onDownload
             </div>
 
           {/* Description */}
-          <p className="text-gray-500 text-sm leading-relaxed mb-6 flex-1 font-light">
+          <p className="text-gray-500 text-sm leading-relaxed mb-4 flex-1 font-light">
             {truncateDescription(agent.description)}
           </p>
+
+          {/* Compliance Warning */}
+          <ComplianceWarning 
+            complianceLevel={agent.compliance_level} 
+            communicationScore={agent.communication_score}
+            className="mb-6"
+          />
 
           {/* Author */}
           <div className="flex items-center mb-6">
@@ -334,7 +346,10 @@ export const AgentCardCompact: React.FC<AgentCardProps> = ({ agent, className = 
                   {agent.name}
                 </h3>
               </div>
-              <div className="flex justify-end items-center space-x-2">
+              <div className="flex justify-end items-center space-x-2 flex-wrap">
+                {/* Compliance Badge */}
+                <ComplianceBadge complianceLevel={agent.compliance_level} className="text-xs" />
+                
                 {/* Your Agent Badge */}
                 {isUserAgent && (
                   <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
@@ -350,9 +365,16 @@ export const AgentCardCompact: React.FC<AgentCardProps> = ({ agent, className = 
               </div>
             </div>
             
-            <p className="text-xs text-gray-500 mb-3 font-light">
+            <p className="text-xs text-gray-500 mb-2 font-light">
               {truncateDescription(agent.description)}
             </p>
+            
+            {/* Compliance Warning - Compact */}
+            <ComplianceWarning 
+              complianceLevel={agent.compliance_level} 
+              communicationScore={agent.communication_score}
+              className="mb-3 text-xs"
+            />
             
             <div className="flex items-center justify-between text-xs text-gray-400 font-light">
               <span>by {agent.author_name}</span>

@@ -769,32 +769,30 @@ app.post('/api/agents', verifyToken, requireVerifiedEmail, (req, res) => {
           });
         }
 
-        // Create a sample content for scoring (from first few files)
-        let sampleContent = '';
-        for (const file of scanResults.files.slice(0, 3)) {
-          if (file.isCodeFile && file.lineCount > 0) {
-            // Add basic patterns for scoring
-            sampleContent += `# File: ${file.fileName}\n`;
-            if (file.fileName.endsWith('.py')) {
-              sampleContent += 'import requests\ndef main():\n    pass\n';
-            } else if (file.fileName.endsWith('.js')) {
-              sampleContent += 'const axios = require("axios");\nfunction main() {}\n';
-            }
+        // Extract actual file content for platform scoring
+        let combinedContent = '';
+        
+        // Use the real content from analyzed files
+        for (const file of scanResults.files) {
+          if (file.isCodeFile && file.content) {
+            combinedContent += `\n// File: ${file.fileName}\n`;
+            combinedContent += file.content + '\n';
           }
         }
-        
-        // Add security findings as sample content for scoring
-        scanResults.securityFindings.slice(0, 5).forEach(finding => {
-          sampleContent += finding.match + '\n';
-        });
 
-        // If no content, create basic sample
-        if (sampleContent.length < 20) {
-          sampleContent = 'def process_data(): return []';
+        // If we don't have direct content, extract from the zip file again
+        if (combinedContent.length < 50) {
+          try {
+            const additionalContent = await scanner.extractContentFromZip(req.file.path);
+            combinedContent = additionalContent;
+          } catch (extractError) {
+            console.warn('⚠️  Could not extract content for scoring, using minimal content');
+            combinedContent = 'function defaultAgent() { return "basic agent"; }';
+          }
         }
 
-        // Calculate platform communication score
-        const platformScore = scanner.calculatePlatformScore(sampleContent);
+        // Calculate platform communication score using real content
+        const platformScore = scanner.calculatePlatformScore(combinedContent);
         
         // Store scan results for database
         scanResultsJson = JSON.stringify({
