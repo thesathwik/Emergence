@@ -2686,6 +2686,145 @@ const dbHelpers = {
         reject(error);
       }
     });
+  },
+
+  // ============================================================================
+  // USER API KEY MANAGEMENT HELPERS
+  // ============================================================================
+
+  // Get user's agent instances
+  getUserAgentInstances: (userId) => {
+    return new Promise((resolve, reject) => {
+      const query = `
+        SELECT 
+          ai.*,
+          a.name as agent_name
+        FROM agent_instances ai
+        JOIN agents a ON ai.agent_id = a.id
+        WHERE ai.uploaded_by = ?
+        ORDER BY ai.created_at DESC
+      `;
+      
+      db.all(query, [userId], (err, rows) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(rows || []);
+        }
+      });
+    });
+  },
+
+  // Get or create user's default instance for API key generation
+  getUserDefaultInstance: (userId) => {
+    return new Promise((resolve, reject) => {
+      const query = `
+        SELECT 
+          ai.*,
+          a.name as agent_name
+        FROM agent_instances ai
+        JOIN agents a ON ai.agent_id = a.id
+        WHERE ai.uploaded_by = ? AND ai.instance_name LIKE '%default%'
+        ORDER BY ai.created_at DESC
+        LIMIT 1
+      `;
+      
+      db.get(query, [userId], (err, row) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(row || null);
+        }
+      });
+    });
+  },
+
+  // Create default instance for user
+  createUserDefaultInstance: (userId) => {
+    return new Promise(async (resolve, reject) => {
+      try {
+        // First create a default agent if needed
+        const defaultAgentName = `user-${userId}-default-agent`;
+        
+        // Check if default agent exists
+        let defaultAgent = await new Promise((resolve, reject) => {
+          db.get('SELECT * FROM agents WHERE name = ?', [defaultAgentName], (err, row) => {
+            if (err) reject(err);
+            else resolve(row);
+          });
+        });
+
+        // Create default agent if it doesn't exist
+        if (!defaultAgent) {
+          defaultAgent = await new Promise((resolve, reject) => {
+            const agentData = {
+              name: defaultAgentName,
+              description: 'Default agent for API key usage',
+              version: '1.0.0',
+              type: 'sdk',
+              categories: JSON.stringify(['utility']),
+              capabilities: JSON.stringify(['api-access']),
+              uploaded_by: userId,
+              created_at: new Date().toISOString()
+            };
+
+            const query = 'INSERT INTO agents (name, description, version, type, categories, capabilities, uploaded_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+            const params = [agentData.name, agentData.description, agentData.version, agentData.type, agentData.categories, agentData.capabilities, agentData.uploaded_by, agentData.created_at];
+
+            db.run(query, params, function(err) {
+              if (err) {
+                reject(err);
+              } else {
+                resolve({ id: this.lastID, ...agentData });
+              }
+            });
+          });
+        }
+
+        // Create default instance
+        const instanceData = {
+          agent_id: defaultAgent.id,
+          instance_name: `${defaultAgentName}-instance`,
+          status: 'active',
+          endpoint_url: null,
+          uploaded_by: userId,
+          created_at: new Date().toISOString()
+        };
+
+        const query = 'INSERT INTO agent_instances (agent_id, instance_name, status, endpoint_url, uploaded_by, created_at) VALUES (?, ?, ?, ?, ?, ?)';
+        const params = [instanceData.agent_id, instanceData.instance_name, instanceData.status, instanceData.endpoint_url, instanceData.uploaded_by, instanceData.created_at];
+
+        db.run(query, params, function(err) {
+          if (err) {
+            reject(err);
+          } else {
+            resolve({ 
+              id: this.lastID, 
+              ...instanceData,
+              agent_name: defaultAgent.name 
+            });
+          }
+        });
+
+      } catch (error) {
+        reject(error);
+      }
+    });
+  },
+
+  // Get API key by ID
+  getApiKeyById: (keyId) => {
+    return new Promise((resolve, reject) => {
+      const query = 'SELECT * FROM agent_api_keys WHERE id = ?';
+      
+      db.get(query, [keyId], (err, row) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(row || null);
+        }
+      });
+    });
   }
 };
 

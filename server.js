@@ -2352,6 +2352,192 @@ app.get('/api/communication/stats', validateApiKey, async (req, res) => {
 });
 
 // ============================================================================
+// USER API KEY MANAGEMENT ENDPOINTS - For User Dashboard
+// ============================================================================
+
+// GET /api/user/api-keys - Get user's API keys
+app.get('/api/user/api-keys', async (req, res) => {
+  try {
+    // Extract user info from JWT token
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({
+        error: 'Unauthorized',
+        message: 'Authentication token required'
+      });
+    }
+
+    // Verify JWT token (assuming you have JWT verification middleware)
+    // For now, we'll get user ID from the token - you may need to adjust this
+    // based on your existing auth implementation
+    let userId;
+    try {
+      // This is a placeholder - adjust based on your JWT implementation
+      const jwt = require('jsonwebtoken');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+      userId = decoded.userId || decoded.id;
+    } catch (jwtError) {
+      return res.status(401).json({
+        error: 'Invalid token',
+        message: 'Authentication token is invalid'
+      });
+    }
+
+    // Get user's agent instances
+    const userInstances = await dbHelpers.getUserAgentInstances(userId);
+    
+    // Get API keys for all user's instances
+    let allApiKeys = [];
+    for (const instance of userInstances) {
+      const instanceKeys = await dbHelpers.getInstanceApiKeys(instance.id, true);
+      allApiKeys = allApiKeys.concat(instanceKeys.map(key => ({
+        ...key,
+        instance_name: instance.instance_name,
+        agent_id: instance.agent_id
+      })));
+    }
+
+    res.json({
+      message: `Found ${allApiKeys.length} API key(s)`,
+      api_keys: allApiKeys,
+      count: allApiKeys.length
+    });
+
+  } catch (error) {
+    console.error('Error fetching user API keys:', error);
+    res.status(500).json({
+      error: 'Failed to fetch API keys',
+      message: error.message
+    });
+  }
+});
+
+// POST /api/user/api-keys - Generate new API key for user's default instance
+app.post('/api/user/api-keys', async (req, res) => {
+  try {
+    // Extract user info from JWT token
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({
+        error: 'Unauthorized',
+        message: 'Authentication token required'
+      });
+    }
+
+    let userId;
+    try {
+      const jwt = require('jsonwebtoken');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+      userId = decoded.userId || decoded.id;
+    } catch (jwtError) {
+      return res.status(401).json({
+        error: 'Invalid token',
+        message: 'Authentication token is invalid'
+      });
+    }
+
+    const { key_name } = req.body;
+
+    // Get or create user's default agent instance
+    let userInstance = await dbHelpers.getUserDefaultInstance(userId);
+    if (!userInstance) {
+      // Create a default instance for the user
+      userInstance = await dbHelpers.createUserDefaultInstance(userId);
+    }
+
+    // Generate API key for the instance
+    const apiKeyResult = await dbHelpers.generateApiKey(
+      userInstance.id,
+      key_name || 'Default API Key',
+      null // No expiration
+    );
+
+    res.status(201).json({
+      message: 'API key generated successfully',
+      api_key_details: {
+        id: apiKeyResult.id,
+        api_key: apiKeyResult.api_key,
+        key_name: apiKeyResult.key_name,
+        expires_at: apiKeyResult.expires_at,
+        created_at: apiKeyResult.created_at,
+        instance_name: userInstance.instance_name
+      }
+    });
+
+  } catch (error) {
+    console.error('Error generating user API key:', error);
+    res.status(500).json({
+      error: 'Failed to generate API key',
+      message: error.message
+    });
+  }
+});
+
+// DELETE /api/user/api-keys/:key_id - Revoke user's API key
+app.delete('/api/user/api-keys/:key_id', async (req, res) => {
+  try {
+    // Extract user info from JWT token
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({
+        error: 'Unauthorized',
+        message: 'Authentication token required'
+      });
+    }
+
+    let userId;
+    try {
+      const jwt = require('jsonwebtoken');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+      userId = decoded.userId || decoded.id;
+    } catch (jwtError) {
+      return res.status(401).json({
+        error: 'Invalid token',
+        message: 'Authentication token is invalid'
+      });
+    }
+
+    const { key_id } = req.params;
+    const keyId = parseInt(key_id);
+    
+    if (isNaN(keyId) || keyId <= 0) {
+      return res.status(400).json({
+        error: 'Invalid key_id',
+        message: 'key_id must be a positive number'
+      });
+    }
+
+    // Verify user owns this API key
+    const userInstances = await dbHelpers.getUserAgentInstances(userId);
+    const userInstanceIds = userInstances.map(instance => instance.id);
+    
+    const apiKey = await dbHelpers.getApiKeyById(keyId);
+    if (!apiKey || !userInstanceIds.includes(apiKey.instance_id)) {
+      return res.status(403).json({
+        error: 'Unauthorized',
+        message: 'You can only revoke your own API keys'
+      });
+    }
+
+    // Revoke the API key
+    const result = await dbHelpers.revokeApiKey(keyId, apiKey.instance_id);
+
+    res.json({
+      message: 'API key revoked successfully',
+      revoked_key_id: keyId,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Error revoking user API key:', error);
+    res.status(500).json({
+      error: 'Failed to revoke API key',
+      message: error.message
+    });
+  }
+});
+
+// ============================================================================
 // AGENT PLATFORM ENDPOINTS - For Live Agent Registration & Discovery
 // ============================================================================
 
