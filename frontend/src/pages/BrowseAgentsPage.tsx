@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { apiService } from '../services/api';
-import { Agent, AgentsResponse } from '../types';
 import AgentCard, { AgentCardCompact } from '../components/AgentCard';
 import CategoryFilter from '../components/CategoryFilter';
-import { useCategoryCounts } from '../hooks/useCategoryCounts';
 import { useAuth } from '../contexts/AuthContext';
+import { useCategoryCounts } from '../hooks/useCategoryCounts';
+import { apiService } from '../services/api';
+import { Agent, AgentsResponse } from '../types';
 
 const BrowseAgentsPage: React.FC = () => {
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -22,12 +22,9 @@ const BrowseAgentsPage: React.FC = () => {
   const fetchAgents = useCallback(async (category?: string) => {
     setLoading(true);
     setError(null);
-    
     try {
       const response: AgentsResponse = await apiService.getAgents(category);
       setAgents(response.agents);
-      
-      // Update category counts when fetching all agents
       if (!category) {
         updateCategoryCounts(response.agents);
       }
@@ -61,10 +58,8 @@ const BrowseAgentsPage: React.FC = () => {
       fetchAgents(selectedCategory);
       return;
     }
-
     setLoading(true);
     setError(null);
-    
     try {
       const response: AgentsResponse = await apiService.searchAgents(searchTerm);
       setAgents(response.agents);
@@ -102,9 +97,9 @@ const BrowseAgentsPage: React.FC = () => {
   const filteredAndSortedAgents = sortAgents(filteredAgents);
 
   return (
-    <div className="min-h-screen bg-white antialiased">
-      {/* Hero Section - Perfect Typography & Spacing */}
-      <div className="relative overflow-hidden">
+    <div className="min-h-screen bg-white antialiased pt-24">
+      {/* Hero Section - Prevent it from eating dropdown clicks */}
+      <div className="relative overflow-hidden z-0 pointer-events-none">
         <div className="max-w-6xl mx-auto px-8 py-32 text-center">
           <h1 className="text-7xl font-extralight text-gray-900 mb-12 tracking-tight leading-none">
             Agent Marketplace
@@ -113,7 +108,6 @@ const BrowseAgentsPage: React.FC = () => {
             Discover intelligent agents crafted by our community. Each one designed to solve real problems, 
             ready to integrate into your workflow.
           </p>
-          
           {/* Perfect divider - Apple-style */}
           <div className="w-16 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent mx-auto"></div>
         </div>

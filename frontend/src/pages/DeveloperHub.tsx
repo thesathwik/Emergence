@@ -4,9 +4,9 @@ import CodeExample from '../components/CodeExample';
 
 const DeveloperHub: React.FC = () => {
   return (
-    <div className="min-h-screen bg-white antialiased">
+    <div className="min-h-screen bg-white antialiased pt-24">
       {/* Hero Section - Perfect Typography & Spacing */}
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-hidden z-0 pointer-events-none">
         <div className="max-w-4xl mx-auto px-8 py-32 text-center">
           <h1 className="text-7xl font-extralight text-gray-900 mb-12 tracking-tight leading-none">
             Developer Hub
@@ -14,7 +14,6 @@ const DeveloperHub: React.FC = () => {
           <p className="text-xl text-gray-500 font-light max-w-2xl mx-auto leading-relaxed mb-16">
             Building the Internet of Agents, one connection at a time
           </p>
-          
           {/* Perfect divider - Apple-style */}
           <div className="w-16 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent mx-auto"></div>
         </div>
@@ -789,7 +788,7 @@ def robust_agent_call(endpoint_url, service_name, data, max_retries=3):
                 continue
                 
         # If all else fails, handle locally or return error
-        return {"error": "No available agents", "fallback": True}`}
+        return {"error": "No available agents", "fallback": True`}
                       />
                     </div>
                   </div>
