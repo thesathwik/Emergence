@@ -133,6 +133,7 @@ function initializeDatabase() {
       endpoint_url TEXT,
       last_ping DATETIME DEFAULT CURRENT_TIMESTAMP,
       metadata TEXT,
+      uploaded_by INTEGER REFERENCES users(id),
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`, (err) => {
       if (err) {
@@ -470,6 +471,7 @@ function migrateAgentInstancesTable() {
         endpoint_url TEXT,
         last_ping DATETIME DEFAULT CURRENT_TIMESTAMP,
         metadata TEXT,
+        uploaded_by INTEGER REFERENCES users(id),
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`, (err) => {
         if (err) {
@@ -502,6 +504,17 @@ function migrateAgentInstancesTable() {
             console.error('Error adding created_at column:', err.message);
           } else {
             console.log('Successfully added created_at column to agent_instances table.');
+          }
+        });
+      }
+      
+      if (!columnNames.includes('uploaded_by')) {
+        console.log('Adding uploaded_by column to agent_instances table...');
+        db.run('ALTER TABLE agent_instances ADD COLUMN uploaded_by INTEGER REFERENCES users(id)', (err) => {
+          if (err) {
+            console.error('Error adding uploaded_by column:', err.message);
+          } else {
+            console.log('Successfully added uploaded_by column to agent_instances table.');
           }
         });
       }
@@ -2760,16 +2773,17 @@ const dbHelpers = {
             const agentData = {
               name: defaultAgentName,
               description: 'Default agent for API key usage',
-              version: '1.0.0',
-              type: 'sdk',
-              categories: JSON.stringify(['utility']),
-              capabilities: JSON.stringify(['api-access']),
-              uploaded_by: userId,
+              category: 'utility',
+              author_name: 'System Generated',
+              file_path: null,
+              file_size: 0,
+              download_count: 0,
+              user_id: userId,
               created_at: new Date().toISOString()
             };
 
-            const query = 'INSERT INTO agents (name, description, version, type, categories, capabilities, uploaded_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
-            const params = [agentData.name, agentData.description, agentData.version, agentData.type, agentData.categories, agentData.capabilities, agentData.uploaded_by, agentData.created_at];
+            const query = 'INSERT INTO agents (name, description, category, author_name, file_path, file_size, download_count, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+            const params = [agentData.name, agentData.description, agentData.category, agentData.author_name, agentData.file_path, agentData.file_size, agentData.download_count, agentData.user_id, agentData.created_at];
 
             db.run(query, params, function(err) {
               if (err) {

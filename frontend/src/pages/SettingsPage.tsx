@@ -1,14 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { userService, ApiKey } from '../services/userService';
 
-interface ApiKey {
-  id: number;
-  api_key: string;
-  key_name: string;
-  created_at: string;
-  expires_at: string | null;
-  is_active: boolean;
-}
 
 const SettingsPage: React.FC = () => {
   const { user } = useAuth();
@@ -26,17 +19,7 @@ const SettingsPage: React.FC = () => {
   const fetchApiKeys = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/user/api-keys', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch API keys');
-      }
-
-      const data = await response.json();
+      const data = await userService.getApiKeys();
       setApiKeys(data.api_keys || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load API keys');
@@ -47,22 +30,7 @@ const SettingsPage: React.FC = () => {
 
   const generateApiKey = async () => {
     try {
-      const response = await fetch('/api/user/api-keys', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-        },
-        body: JSON.stringify({
-          key_name: newKeyName || 'Default Key',
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate API key');
-      }
-
-      const data = await response.json();
+      const data = await userService.generateApiKey(newKeyName || 'Default Key');
       setGeneratedKey(data.api_key_details.api_key);
       setNewKeyName('');
       setShowNewKeyForm(false);
@@ -78,17 +46,7 @@ const SettingsPage: React.FC = () => {
     }
 
     try {
-      const response = await fetch(`/api/user/api-keys/${keyId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to revoke API key');
-      }
-
+      await userService.revokeApiKey(keyId);
       fetchApiKeys(); // Refresh the list
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to revoke API key');

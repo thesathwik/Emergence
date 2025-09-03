@@ -10,7 +10,7 @@ const CodeScanner = require('./utils/codeScanner');
 const authRoutes = require('./routes/auth');
 
 // Import auth middleware
-const { verifyToken, requireVerifiedEmail } = require('./auth');
+const { verifyToken, requireVerifiedEmail, JWT_SECRET } = require('./auth');
 
 // ============================================================================
 // SECURITY MIDDLEWARE FOR INTER-AGENT COMMUNICATION
@@ -2357,10 +2357,16 @@ app.get('/api/communication/stats', validateApiKey, async (req, res) => {
 
 // GET /api/user/api-keys - Get user's API keys
 app.get('/api/user/api-keys', async (req, res) => {
+  console.log('📋 GET API Keys Request received');
+  console.log('Headers:', req.headers);
+  
   try {
     // Extract user info from JWT token
     const token = req.headers.authorization?.replace('Bearer ', '');
+    console.log('Extracted token:', token ? 'Token present' : 'No token');
+    
     if (!token) {
+      console.log('❌ No token provided for GET request');
       return res.status(401).json({
         error: 'Unauthorized',
         message: 'Authentication token required'
@@ -2374,7 +2380,7 @@ app.get('/api/user/api-keys', async (req, res) => {
     try {
       // This is a placeholder - adjust based on your JWT implementation
       const jwt = require('jsonwebtoken');
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+      const decoded = jwt.verify(token, JWT_SECRET);
       userId = decoded.userId || decoded.id;
     } catch (jwtError) {
       return res.status(401).json({
@@ -2414,10 +2420,17 @@ app.get('/api/user/api-keys', async (req, res) => {
 
 // POST /api/user/api-keys - Generate new API key for user's default instance
 app.post('/api/user/api-keys', async (req, res) => {
+  console.log('🔑 API Key Generation Request received');
+  console.log('Headers:', req.headers);
+  console.log('Body:', req.body);
+  
   try {
     // Extract user info from JWT token
     const token = req.headers.authorization?.replace('Bearer ', '');
+    console.log('Extracted token:', token ? 'Token present' : 'No token');
+    
     if (!token) {
+      console.log('❌ No token provided');
       return res.status(401).json({
         error: 'Unauthorized',
         message: 'Authentication token required'
@@ -2427,9 +2440,16 @@ app.post('/api/user/api-keys', async (req, res) => {
     let userId;
     try {
       const jwt = require('jsonwebtoken');
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+      console.log('🔐 Using JWT secret:', JWT_SECRET);
+      console.log('🎫 Token to verify:', token.substring(0, 50) + '...');
+      
+      const decoded = jwt.verify(token, JWT_SECRET);
+      console.log('✅ Token verified successfully. Decoded:', decoded);
       userId = decoded.userId || decoded.id;
+      console.log('👤 User ID extracted:', userId);
     } catch (jwtError) {
+      console.log('❌ JWT Verification Error:', jwtError.message);
+      console.log('🔍 Error details:', jwtError);
       return res.status(401).json({
         error: 'Invalid token',
         message: 'Authentication token is invalid'
@@ -2488,7 +2508,7 @@ app.delete('/api/user/api-keys/:key_id', async (req, res) => {
     let userId;
     try {
       const jwt = require('jsonwebtoken');
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+      const decoded = jwt.verify(token, JWT_SECRET);
       userId = decoded.userId || decoded.id;
     } catch (jwtError) {
       return res.status(401).json({
