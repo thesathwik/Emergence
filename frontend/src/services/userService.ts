@@ -1,8 +1,17 @@
 import axios from 'axios';
 
+// Check if we're on Railway (production) by looking at the hostname
+const isProduction = process.env.NODE_ENV === 'production' || 
+                     window.location.hostname.includes('railway.app') ||
+                     window.location.hostname.includes('up.railway.app');
+
+const baseURL = isProduction 
+  ? '/api/user'  // Use relative path in production (same domain)
+  : 'http://localhost:3001/api/user';  // Use localhost in development
+
 // Create axios instance for user API calls
 const userApi = axios.create({
-  baseURL: 'http://localhost:3001/api/user',
+  baseURL: baseURL,
   headers: {
     'Content-Type': 'application/json',
   },
