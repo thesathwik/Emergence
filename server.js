@@ -63,7 +63,7 @@ const validateApiKey = async (req, res, next) => {
     }
 
     // Check if instance is active
-    if (keyInfo.instance_status !== 'running' && keyInfo.instance_status !== 'available') {
+    if (keyInfo.instance_status !== 'running' && keyInfo.instance_status !== 'available' && keyInfo.instance_status !== 'active') {
       logData.api_key_used = apiKey;
       logData.from_instance_id = keyInfo.instance_id;
       logData.error_message = `Instance status: ${keyInfo.instance_status}`;
@@ -74,7 +74,7 @@ const validateApiKey = async (req, res, next) => {
       
       return res.status(403).json({
         error: 'Instance not active',
-        message: 'Agent instance must be in running or available status'
+        message: 'Agent instance must be in running, available, or active status'
       });
     }
 
@@ -1768,10 +1768,10 @@ app.post('/api/agents/message',
       });
     }
 
-    if (toInstance.status !== 'running' && toInstance.status !== 'available') {
+    if (toInstance.status !== 'running' && toInstance.status !== 'available' && toInstance.status !== 'active') {
       return res.status(403).json({
         error: 'Recipient not available',
-        message: 'Recipient agent instance must be in running or available status to receive messages'
+        message: 'Recipient agent instance must be in running, available, or active status to receive messages'
       });
     }
 
