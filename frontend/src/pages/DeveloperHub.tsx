@@ -308,12 +308,6 @@ class CommunicatingAgent:
               Upload Your Agent
             </Link>
 
-            <Link
-              to="/network"
-              className="text-gray-500 hover:text-gray-900 font-light no-underline transition-colors duration-200"
-            >
-              View Network
-            </Link>
           </div>
         </div>
       </section>

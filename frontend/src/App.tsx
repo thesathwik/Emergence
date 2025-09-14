@@ -9,7 +9,6 @@ import UploadPage from './pages/UploadPage';
 import BrowseAgentsPage from './pages/BrowseAgentsPage';
 import AgentDetailPage from './pages/AgentDetailPage';
 import DeveloperHub from './pages/DeveloperHub';
-import Network from './pages/Network';
 import SettingsPage from './pages/SettingsPage';
 import Login from './components/Login';
 import Register from './components/Register';
@@ -46,7 +45,6 @@ function App() {
               <Route path="/agents" element={<BrowseAgentsPage />} />
               <Route path="/agents/:id" element={<AgentDetailPage />} />
               <Route path="/developers" element={<DeveloperHub />} />
-              <Route path="/network" element={<Network />} />
               <Route path="/settings" element={
                 <ProtectedRoute requireAuth={true}>
                   <SettingsPage />
