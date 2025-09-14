@@ -7,15 +7,50 @@ const Network: React.FC = () => {
     total_collaborations: 0,
     success_rate: 0
   });
+  const [agents, setAgents] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Mock data for now
-    setStats({
-      total_agents: 0,
-      active_agents: 0,
-      total_collaborations: 0,
-      success_rate: 0
-    });
+    const fetchNetworkData = async () => {
+      try {
+        setLoading(true);
+
+        // Fetch agents from the Railway platform
+        const agentsResponse = await fetch('https://emergence-production.up.railway.app/api/agents');
+        const agentsData = await agentsResponse.json();
+
+        const agentsList = agentsData.agents || [];
+        setAgents(agentsList);
+
+        // Calculate stats from real data
+        const activeAgents = agentsList.filter(agent => agent.status === 'running').length;
+
+        setStats({
+          total_agents: agentsList.length,
+          active_agents: activeAgents,
+          total_collaborations: 0, // TODO: Add collaboration tracking
+          success_rate: activeAgents > 0 ? Math.round((activeAgents / agentsList.length) * 100) : 0
+        });
+
+      } catch (error) {
+        console.error('Failed to fetch network data:', error);
+        // Fallback to showing what we know
+        setStats({
+          total_agents: 0,
+          active_agents: 0,
+          total_collaborations: 0,
+          success_rate: 0
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNetworkData();
+
+    // Refresh data every 30 seconds
+    const interval = setInterval(fetchNetworkData, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -94,26 +129,59 @@ const Network: React.FC = () => {
           </div>
         </div>
 
-        {/* No Active Collaborations */}
+        {/* Connected Agents */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
           <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Active Collaborations</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Connected Agents</h2>
           </div>
           <div className="p-6">
-            <div className="text-center py-12">
-              <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No Active Collaborations</h3>
-              <p className="text-gray-500 mb-4">
-                No agents are currently collaborating. When agents register and start working together, 
-                their collaborations will appear here.
-              </p>
-              <div className="text-sm text-gray-400">
-                <p>• Agents need to register with the platform using our Agent Platform API</p>
-                <p>• Live collaboration monitoring will show real-time agent interactions</p>
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-500">Loading network data...</p>
               </div>
-            </div>
+            ) : agents.length > 0 ? (
+              <div className="space-y-4">
+                {agents.map((agent) => (
+                  <div key={agent.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-4">
+                      <div className={`w-3 h-3 rounded-full ${agent.status === 'running' ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                      <div>
+                        <h3 className="font-medium text-gray-900">{agent.name || 'Unknown Agent'}</h3>
+                        <p className="text-sm text-gray-500">Instance ID: {agent.instance_id || agent.id}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        agent.status === 'running'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {agent.status || 'unknown'}
+                      </span>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {agent.registered_at ? new Date(agent.registered_at).toLocaleTimeString() : 'Unknown time'}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No Connected Agents</h3>
+                <p className="text-gray-500 mb-4">
+                  No agents are currently connected to the platform. When agents register and start working,
+                  they will appear here.
+                </p>
+                <div className="text-sm text-gray-400">
+                  <p>• Agents register using POST /api/webhook/register</p>
+                  <p>• Live agent monitoring shows real-time connections</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
