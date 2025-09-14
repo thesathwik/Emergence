@@ -16,11 +16,18 @@ railway login
 # Link to your project
 railway link
 
-# Create a volume
-railway volume create emergence-db-volume
+# Create a volume (interactive)
+railway volume add
+# Follow the prompts:
+# - Name: emergence-db-volume
+# - Mount Path: /app/data
+# - Size: 1
 
 # Attach the volume to your service
 railway volume attach emergence-db-volume /app/data
+
+# Verify the volume was created
+railway volume list
 ```
 
 ## Step 2: Alternative - Create Volume via Railway Dashboard
