@@ -1,0 +1,16 @@
+[build]
+builder = "NIXPACKS"
+buildCommand = "npm run build"
+
+[deploy]
+startCommand = "npm start"
+restartPolicyType = "ON_FAILURE" 
+restartPolicyMaxRetries = 10
+
+[[deploy.volumes]]
+name = "emergence-db-volume"
+mountPath = "/app/data"
+
+[deploy.variables]
+NODE_ENV = "production"
+DB_PATH = "/app/data/database.sqlite"
