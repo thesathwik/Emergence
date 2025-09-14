@@ -1,0 +1,28 @@
+{
+  "name": "IdeaAgent",
+  "version": "1.0.0",
+  "description": "Intelligent idea generation agent that autonomously decides when to collaborate with validation agents for business and financial ideas",
+  "author": "Emergence Platform",
+  "capabilities": [
+    "idea_generation",
+    "creative_brainstorming",
+    "intelligent_collaboration_decisions",
+    "ai_powered_analysis"
+  ],
+  "dependencies": {
+    "python": ">=3.8",
+    "ollama": "required for AI decision-making"
+  },
+  "environment_variables": {
+    "EMERGENCE_PLATFORM_URL": "Platform URL for agent communication",
+    "OLLAMA_URL": "Ollama service URL (default: http://localhost:11434)",
+    "OLLAMA_MODEL": "AI model to use (default: phi3:mini)"
+  },
+  "collaboration": {
+    "seeks_validation_from": ["ValidatorAgent"],
+    "collaboration_triggers": ["business_strategy", "financial_advice", "high_risk_content"],
+    "independent_tasks": ["creative_design", "artistic_concepts", "general_brainstorming"]
+  },
+  "entry_point": "main.py",
+  "platform_version": "1.0"
+}

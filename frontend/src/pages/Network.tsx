@@ -1,13 +1,28 @@
 import React, { useState, useEffect } from 'react';
 
+interface Agent {
+  id: string | number;
+  instance_id?: number;
+  name?: string;
+  status?: string;
+  registered_at?: string;
+}
+
+interface AgentStats {
+  total_agents: number;
+  active_agents: number;
+  total_collaborations: number;
+  success_rate: number;
+}
+
 const Network: React.FC = () => {
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<AgentStats>({
     total_agents: 0,
     active_agents: 0,
     total_collaborations: 0,
     success_rate: 0
   });
-  const [agents, setAgents] = useState([]);
+  const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,11 +34,11 @@ const Network: React.FC = () => {
         const agentsResponse = await fetch('https://emergence-production.up.railway.app/api/agents');
         const agentsData = await agentsResponse.json();
 
-        const agentsList = agentsData.agents || [];
+        const agentsList: Agent[] = agentsData.agents || [];
         setAgents(agentsList);
 
         // Calculate stats from real data
-        const activeAgents = agentsList.filter(agent => agent.status === 'running').length;
+        const activeAgents = agentsList.filter((agent: Agent) => agent.status === 'running').length;
 
         setStats({
           total_agents: agentsList.length,
@@ -142,7 +157,7 @@ const Network: React.FC = () => {
               </div>
             ) : agents.length > 0 ? (
               <div className="space-y-4">
-                {agents.map((agent) => (
+                {agents.map((agent: Agent) => (
                   <div key={agent.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                     <div className="flex items-center space-x-4">
                       <div className={`w-3 h-3 rounded-full ${agent.status === 'running' ? 'bg-green-500' : 'bg-gray-400'}`}></div>

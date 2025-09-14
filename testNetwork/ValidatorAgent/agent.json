@@ -1,0 +1,26 @@
+{
+  "name": "ValidatorAgent",
+  "version": "1.0.0",
+  "description": "Real-time validation service that provides intelligent fact-checking and idea validation to other agents",
+  "author": "Emergence Platform",
+  "capabilities": [
+    "idea_validation",
+    "fact_checking",
+    "plausibility_assessment",
+    "risk_analysis",
+    "contextual_validation_strategies"
+  ],
+  "dependencies": {
+    "python": ">=3.8"
+  },
+  "environment_variables": {
+    "EMERGENCE_PLATFORM_URL": "Platform URL for agent communication"
+  },
+  "services": {
+    "provides_validation_for": ["IdeaAgent", "any_agent"],
+    "validation_types": ["business_ideas", "factual_claims", "risk_assessment"],
+    "response_format": "structured_confidence_scores"
+  },
+  "entry_point": "main.py",
+  "platform_version": "1.0"
+}
