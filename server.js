@@ -287,6 +287,55 @@ app.get('/api/health', async (req, res) => {
         };
         health.status = 'DEGRADED';
       }
+
+      // Add volume health monitoring
+      try {
+        const volumeHealth = await dbHelpers.checkVolumeHealth();
+        health.volume = volumeHealth;
+        
+        // Update overall status if volume is unhealthy
+        if (volumeHealth.status !== 'healthy') {
+          health.status = health.status === 'OK' ? 'DEGRADED' : health.status;
+        }
+      } catch (volumeError) {
+        console.error('Volume health check failed:', volumeError);
+        health.volume = {
+          status: 'unhealthy',
+          error: volumeError.message
+        };
+        health.status = 'DEGRADED';
+      }
+
+      // Add backup status monitoring
+      try {
+        const backupHealth = await dbHelpers.checkBackupHealth();
+        health.backup = backupHealth;
+      } catch (backupError) {
+        console.error('Backup health check failed:', backupError);
+        health.backup = {
+          status: 'unhealthy',
+          error: backupError.message
+        };
+        // Backup issues don't degrade overall status, just warn
+      }
+
+      // Add file system checks
+      try {
+        const filesystemHealth = await dbHelpers.checkFilesystemHealth();
+        health.filesystem = filesystemHealth;
+        
+        // Update overall status if filesystem is unhealthy
+        if (filesystemHealth.status !== 'healthy') {
+          health.status = health.status === 'OK' ? 'DEGRADED' : health.status;
+        }
+      } catch (fsError) {
+        console.error('Filesystem health check failed:', fsError);
+        health.filesystem = {
+          status: 'unhealthy',
+          error: fsError.message
+        };
+        health.status = 'DEGRADED';
+      }
     }
 
     const statusCode = health.status === 'OK' ? 200 : 503;

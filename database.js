@@ -1,88 +1,644 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
+const { execSync } = require('child_process');
+
+// Enhanced volume mount verification functions
+function checkVolumeSpaceAvailability(volumePath) {
+  try {
+    const stats = fs.statSync(volumePath);
+    if (!stats.isDirectory()) {
+      return { available: false, reason: 'Path is not a directory' };
+    }
+
+    // Try to get disk space information using df command
+    try {
+      const dfOutput = execSync(`df -h "${volumePath}"`, { encoding: 'utf8' });
+      const lines = dfOutput.trim().split('\n');
+      if (lines.length >= 2) {
+        const spaceInfo = lines[1].split(/\s+/);
+        const available = spaceInfo[3] || 'Unknown';
+        const used = spaceInfo[2] || 'Unknown';
+        const total = spaceInfo[1] || 'Unknown';
+        
+        console.log(`💾 Volume space information:
+          Total: ${total}
+          Used: ${used}
+          Available: ${available}`);
+        
+        return { 
+          available: true, 
+          total, 
+          used, 
+          free: available,
+          details: dfOutput 
+        };
+      }
+    } catch (dfError) {
+      console.log(`⚠️  Could not get disk space info: ${dfError.message}`);
+    }
+
+    return { available: true, reason: 'Directory accessible but space info unavailable' };
+  } catch (error) {
+    return { available: false, reason: error.message };
+  }
+}
+
+function verifyVolumeMount(volumePath) {
+  const verification = {
+    path: volumePath,
+    exists: false,
+    isDirectory: false,
+    writable: false,
+    readable: false,
+    mounted: false,
+    spaceInfo: null,
+    errors: []
+  };
+
+  try {
+    // Check if path exists
+    verification.exists = fs.existsSync(volumePath);
+    if (!verification.exists) {
+      verification.errors.push('Volume directory does not exist');
+      return verification;
+    }
+
+    // Check if it's a directory
+    const stats = fs.statSync(volumePath);
+    verification.isDirectory = stats.isDirectory();
+    if (!verification.isDirectory) {
+      verification.errors.push('Volume path is not a directory');
+      return verification;
+    }
+
+    // Check read permissions
+    try {
+      fs.accessSync(volumePath, fs.constants.R_OK);
+      verification.readable = true;
+    } catch (readError) {
+      verification.errors.push(`Not readable: ${readError.message}`);
+    }
+
+    // Check write permissions
+    try {
+      fs.accessSync(volumePath, fs.constants.W_OK);
+      verification.writable = true;
+    } catch (writeError) {
+      verification.errors.push(`Not writable: ${writeError.message}`);
+    }
+
+    // Test actual write capability with a temporary file
+    if (verification.writable) {
+      try {
+        const testFile = path.join(volumePath, '.volume_test_' + Date.now());
+        fs.writeFileSync(testFile, 'test');
+        fs.unlinkSync(testFile);
+        console.log(`✅ Volume write test successful: ${volumePath}`);
+      } catch (writeTestError) {
+        verification.writable = false;
+        verification.errors.push(`Write test failed: ${writeTestError.message}`);
+      }
+    }
+
+    // Check if this appears to be a mounted volume (Railway specific checks)
+    try {
+      // In Railway, mounted volumes typically have different characteristics
+      // Check if the directory has the expected mount characteristics
+      const mountInfo = execSync('mount', { encoding: 'utf8' });
+      verification.mounted = mountInfo.includes(volumePath) || 
+                           mountInfo.includes('/app/data') ||
+                           process.env.RAILWAY_VOLUME_MOUNT_PATH === volumePath;
+      
+      if (!verification.mounted) {
+        // Additional check: see if directory behaves like a mount point
+        const parentStats = fs.statSync(path.dirname(volumePath));
+        verification.mounted = stats.dev !== parentStats.dev;
+      }
+    } catch (mountError) {
+      console.log(`⚠️  Could not verify mount status: ${mountError.message}`);
+      // Assume mounted if we can't verify (to avoid false negatives)
+      verification.mounted = true;
+    }
+
+    // Get space information
+    verification.spaceInfo = checkVolumeSpaceAvailability(volumePath);
+
+  } catch (error) {
+    verification.errors.push(`Verification failed: ${error.message}`);
+  }
+
+  return verification;
+}
+
+function logVolumeStatus(verification) {
+  console.log(`📊 Volume Mount Verification Report:
+  Path: ${verification.path}
+  Exists: ${verification.exists ? '✅' : '❌'}
+  Is Directory: ${verification.isDirectory ? '✅' : '❌'}
+  Readable: ${verification.readable ? '✅' : '❌'}
+  Writable: ${verification.writable ? '✅' : '❌'}
+  Mounted: ${verification.mounted ? '✅' : '❌'}
+  Space Available: ${verification.spaceInfo?.available ? '✅' : '❌'}`);
+
+  if (verification.spaceInfo?.available) {
+    console.log(`  Space Details: ${verification.spaceInfo.free} free of ${verification.spaceInfo.total}`);
+  }
+
+  if (verification.errors.length > 0) {
+    console.log(`  Errors: ${verification.errors.join(', ')}`);
+  }
+
+  return verification.exists && verification.isDirectory && verification.readable && verification.writable;
+}
 
 // Database configuration - use persistent volume in production
 let DB_PATH;
+let volumeVerification = null;
+
 if (process.env.NODE_ENV === 'production') {
   // In production, always use the volume path even if DB_PATH env var isn't set
-  DB_PATH = process.env.DB_PATH || '/app/data/database.sqlite';
-  
-  // Ensure the volume mount directory exists in production
+  const requestedPath = process.env.DB_PATH || '/app/data/database.sqlite';
   const volumeDir = '/app/data';
-  if (!fs.existsSync(volumeDir)) {
-    console.log(`⚠️  Volume directory ${volumeDir} doesn't exist, creating...`);
-    try {
-      fs.mkdirSync(volumeDir, { recursive: true });
-      console.log(`✅ Created volume directory: ${volumeDir}`);
-    } catch (error) {
-      console.error(`❌ Failed to create volume directory: ${error.message}`);
-      console.error(`   This may indicate the Railway volume is not properly mounted`);
-      // Fall back to container filesystem as last resort
-      console.log(`⚠️  Falling back to container filesystem: /app/database.sqlite`);
+  
+  console.log(`🔍 Starting volume mount verification for production environment...`);
+  console.log(`   Requested DB path: ${requestedPath}`);
+  console.log(`   Expected volume directory: ${volumeDir}`);
+  
+  // Perform comprehensive volume verification
+  volumeVerification = verifyVolumeMount(volumeDir);
+  const isVolumeHealthy = logVolumeStatus(volumeVerification);
+  
+  if (isVolumeHealthy) {
+    DB_PATH = requestedPath;
+    console.log(`✅ Volume verification successful, using: ${DB_PATH}`);
+  } else {
+    console.error(`❌ Volume verification failed for ${volumeDir}`);
+    console.error(`   Errors: ${volumeVerification.errors.join(', ')}`);
+    
+    // Attempt to create volume directory if it doesn't exist
+    if (!volumeVerification.exists) {
+      console.log(`🔧 Attempting to create volume directory: ${volumeDir}`);
+      try {
+        fs.mkdirSync(volumeDir, { recursive: true });
+        console.log(`✅ Successfully created volume directory: ${volumeDir}`);
+        
+        // Re-verify after creation
+        volumeVerification = verifyVolumeMount(volumeDir);
+        const isVolumeHealthyAfterCreation = logVolumeStatus(volumeVerification);
+        
+        if (isVolumeHealthyAfterCreation) {
+          DB_PATH = requestedPath;
+          console.log(`✅ Volume verification successful after creation, using: ${DB_PATH}`);
+        } else {
+          throw new Error('Volume still not healthy after creation attempt');
+        }
+      } catch (createError) {
+        console.error(`❌ Failed to create volume directory: ${createError.message}`);
+        console.error(`   This indicates the Railway volume is not properly mounted`);
+        console.log(`⚠️  Falling back to container filesystem: /app/database.sqlite`);
+        DB_PATH = '/app/database.sqlite';
+      }
+    } else {
+      console.log(`⚠️  Volume directory exists but has issues, falling back to container filesystem`);
       DB_PATH = '/app/database.sqlite';
     }
-  } else {
-    console.log(`✅ Volume directory exists: ${volumeDir}`);
   }
 } else {
   // In development, use local path
   DB_PATH = process.env.DB_PATH || path.join(__dirname, 'database.sqlite');
+  console.log(`🔧 Development environment detected, using local path: ${DB_PATH}`);
 }
 
-// Ensure the directory exists for the database file
-const DB_DIR = path.dirname(DB_PATH);
-try {
-  if (!fs.existsSync(DB_DIR)) {
-    fs.mkdirSync(DB_DIR, { recursive: true });
-    console.log(`✅ Created database directory: ${DB_DIR}`);
+// Enhanced fallback mechanisms with retry logic
+function createDatabaseDirectoryWithRetry(dbPath, maxRetries = 3, retryDelay = 1000) {
+  const dbDir = path.dirname(dbPath);
+  let lastError = null;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`🔧 Attempt ${attempt}/${maxRetries}: Ensuring database directory exists: ${dbDir}`);
+      
+      if (!fs.existsSync(dbDir)) {
+        fs.mkdirSync(dbDir, { recursive: true });
+        console.log(`✅ Created database directory: ${dbDir}`);
+      } else {
+        console.log(`✅ Database directory already exists: ${dbDir}`);
+      }
+      
+      // Verify directory permissions
+      fs.accessSync(dbDir, fs.constants.W_OK);
+      console.log(`✅ Database directory is writable: ${dbDir}`);
+      
+      // Test write capability
+      const testFile = path.join(dbDir, '.db_test_' + Date.now());
+      fs.writeFileSync(testFile, 'test');
+      fs.unlinkSync(testFile);
+      console.log(`✅ Database directory write test successful: ${dbDir}`);
+      
+      return { success: true, directory: dbDir, attempts: attempt };
+      
+    } catch (error) {
+      lastError = error;
+      console.error(`❌ Attempt ${attempt}/${maxRetries} failed: ${error.message}`);
+      console.error(`   Directory: ${dbDir}`);
+      console.error(`   Error code: ${error.code}`);
+      console.error(`   Current working directory: ${process.cwd()}`);
+      
+      if (attempt < maxRetries) {
+        console.log(`⏳ Waiting ${retryDelay}ms before retry...`);
+        // Simple delay implementation
+        const start = Date.now();
+        while (Date.now() - start < retryDelay) {
+          // Busy wait for simplicity in this context
+        }
+      }
+    }
   }
   
-  // Check directory permissions
-  fs.accessSync(DB_DIR, fs.constants.W_OK);
-  console.log(`✅ Database directory is writable: ${DB_DIR}`);
-} catch (error) {
-  console.error(`❌ Database directory error: ${error.message}`);
-  console.error(`   Directory: ${DB_DIR}`);
-  console.error(`   Current working directory: ${process.cwd()}`);
-  throw error;
+  return { success: false, error: lastError, attempts: maxRetries };
 }
 
-console.log(`📊 Database configuration:
+function implementGracefulFallback(originalPath, error) {
+  console.log(`🔄 Implementing graceful fallback for database path: ${originalPath}`);
+  console.log(`   Original error: ${error.message}`);
+  
+  const fallbackOptions = [
+    '/tmp/database.sqlite',
+    path.join(process.cwd(), 'database.sqlite'),
+    path.join(__dirname, 'database.sqlite')
+  ];
+  
+  for (const fallbackPath of fallbackOptions) {
+    try {
+      console.log(`🔧 Testing fallback option: ${fallbackPath}`);
+      
+      const fallbackDir = path.dirname(fallbackPath);
+      
+      // Test if we can create the directory and write to it
+      if (!fs.existsSync(fallbackDir)) {
+        fs.mkdirSync(fallbackDir, { recursive: true });
+      }
+      
+      fs.accessSync(fallbackDir, fs.constants.W_OK);
+      
+      // Test write capability
+      const testFile = path.join(fallbackDir, '.fallback_test_' + Date.now());
+      fs.writeFileSync(testFile, 'test');
+      fs.unlinkSync(testFile);
+      
+      console.log(`✅ Fallback option successful: ${fallbackPath}`);
+      console.log(`⚠️  WARNING: Using fallback database location!`);
+      console.log(`   Original path: ${originalPath}`);
+      console.log(`   Fallback path: ${fallbackPath}`);
+      console.log(`   Data persistence may be affected depending on the environment`);
+      
+      return { success: true, path: fallbackPath, warning: true };
+      
+    } catch (fallbackError) {
+      console.log(`❌ Fallback option failed: ${fallbackPath} - ${fallbackError.message}`);
+    }
+  }
+  
+  console.error(`💥 All fallback options exhausted. Cannot establish database location.`);
+  return { success: false, error: 'No viable database location found' };
+}
+
+// Ensure the directory exists for the database file with enhanced error handling
+const DB_DIR = path.dirname(DB_PATH);
+console.log(`🔧 Setting up database directory: ${DB_DIR}`);
+
+const directoryResult = createDatabaseDirectoryWithRetry(DB_PATH);
+
+if (!directoryResult.success) {
+  console.error(`❌ Failed to create database directory after ${directoryResult.attempts} attempts`);
+  console.error(`   Last error: ${directoryResult.error.message}`);
+  
+  // Implement graceful fallback
+  const fallbackResult = implementGracefulFallback(DB_PATH, directoryResult.error);
+  
+  if (fallbackResult.success) {
+    DB_PATH = fallbackResult.path;
+    console.log(`🔄 Database path updated to fallback location: ${DB_PATH}`);
+    
+    if (fallbackResult.warning) {
+      console.log(`⚠️  IMPORTANT: Database is using a fallback location.`);
+      console.log(`   This may affect data persistence across deployments.`);
+      console.log(`   Please check Railway volume configuration.`);
+    }
+  } else {
+    console.error(`💥 CRITICAL: Cannot establish any database location.`);
+    console.error(`   Error: ${fallbackResult.error}`);
+    console.error(`   The application may not function correctly.`);
+    throw new Error(`Database initialization failed: ${fallbackResult.error}`);
+  }
+} else {
+  console.log(`✅ Database directory setup completed successfully after ${directoryResult.attempts} attempt(s)`);
+}
+
+// Enhanced database configuration logging
+function logDatabaseConfiguration() {
+  const dbDir = path.dirname(DB_PATH);
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  console.log(`📊 Database Configuration Summary:
   Environment: ${process.env.NODE_ENV || 'development'}
   DB_PATH env var: ${process.env.DB_PATH || 'NOT SET'}
   Resolved database path: ${DB_PATH}
-  Database directory: ${DB_DIR}
-  Directory exists: ${fs.existsSync(DB_DIR)}
+  Database directory: ${dbDir}
+  Directory exists: ${fs.existsSync(dbDir)}
   Database file exists: ${fs.existsSync(DB_PATH)}
   Process CWD: ${process.cwd()}
-  Railway volume should be at: /app/data
-`);
+  Railway volume expected at: /app/data`);
 
-// Create database connection
-const db = new sqlite3.Database(DB_PATH, (err) => {
-  if (err) {
-    console.error('❌ Error opening database:', err.message);
-    console.error('   Database path:', DB_PATH);
-    console.error('   Error details:', err);
-  } else {
-    console.log('✅ Connected to SQLite database.');
-    console.log(`📁 Database file: ${DB_PATH}`);
+  if (isProduction) {
+    console.log(`  Volume verification status: ${volumeVerification ? 'COMPLETED' : 'NOT PERFORMED'}`);
     
-    // Check if this is a new database or existing
-    if (fs.existsSync(DB_PATH)) {
-      const stats = fs.statSync(DB_PATH);
-      console.log(`📈 Database file size: ${stats.size} bytes`);
-      console.log(`📅 Database last modified: ${stats.mtime}`);
+    if (volumeVerification) {
+      console.log(`  Volume mount healthy: ${volumeVerification.exists && volumeVerification.writable ? '✅' : '❌'}`);
+      
+      if (volumeVerification.spaceInfo?.available) {
+        console.log(`  Volume space: ${volumeVerification.spaceInfo.free} available`);
+      }
+      
+      if (volumeVerification.errors.length > 0) {
+        console.log(`  Volume issues: ${volumeVerification.errors.join(', ')}`);
+      }
     }
     
-    console.log('🚀 Starting database initialization...');
-    initializeDatabase();
+    // Check if we're using a fallback path
+    const expectedProductionPath = '/app/data/database.sqlite';
+    if (DB_PATH !== expectedProductionPath) {
+      console.log(`  ⚠️  WARNING: Using fallback database path!`);
+      console.log(`     Expected: ${expectedProductionPath}`);
+      console.log(`     Actual: ${DB_PATH}`);
+      console.log(`     This may indicate Railway volume mount issues.`);
+    }
   }
-});
+  
+  console.log(`  Final database location: ${DB_PATH}`);
+}
+
+logDatabaseConfiguration();
+
+// Database backup utility functions
+function createDatabaseBackup() {
+  return new Promise((resolve, reject) => {
+    try {
+      // Check if database file exists
+      if (!fs.existsSync(DB_PATH)) {
+        console.log('📦 No existing database to backup');
+        resolve({ created: false, reason: 'No database file exists' });
+        return;
+      }
+
+      // Create backup directory
+      const backupDir = path.join(DB_DIR, 'backups');
+      if (!fs.existsSync(backupDir)) {
+        fs.mkdirSync(backupDir, { recursive: true });
+        console.log(`✅ Created backup directory: ${backupDir}`);
+      }
+
+      // Generate backup filename with timestamp
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0] + '_' + 
+                       new Date().toISOString().replace(/[:.]/g, '-').split('T')[1].split('.')[0];
+      const backupFilename = `database_backup_${timestamp}.sqlite`;
+      const backupPath = path.join(backupDir, backupFilename);
+
+      // Copy database file
+      fs.copyFileSync(DB_PATH, backupPath);
+      
+      // Verify backup file was created and get stats
+      const originalStats = fs.statSync(DB_PATH);
+      const backupStats = fs.statSync(backupPath);
+      
+      // Calculate checksum for verification
+      const originalChecksum = calculateFileChecksum(DB_PATH);
+      const backupChecksum = calculateFileChecksum(backupPath);
+      
+      if (originalChecksum !== backupChecksum) {
+        throw new Error('Backup verification failed: checksums do not match');
+      }
+      
+      const backupInfo = {
+        created: true,
+        timestamp: new Date().toISOString(),
+        filename: backupFilename,
+        size: backupStats.size,
+        checksum: backupChecksum,
+        source_path: DB_PATH,
+        backup_path: backupPath,
+        original_size: originalStats.size
+      };
+      
+      console.log(`✅ Database backup created successfully:
+        File: ${backupFilename}
+        Size: ${backupStats.size} bytes
+        Checksum: ${backupChecksum.substring(0, 16)}...`);
+      
+      resolve(backupInfo);
+    } catch (error) {
+      console.error('❌ Failed to create database backup:', error.message);
+      reject(error);
+    }
+  });
+}
+
+function cleanupOldBackups() {
+  return new Promise((resolve, reject) => {
+    try {
+      const backupDir = path.join(DB_DIR, 'backups');
+      
+      // Check if backup directory exists
+      if (!fs.existsSync(backupDir)) {
+        console.log('📦 No backup directory found, nothing to cleanup');
+        resolve({ cleaned: 0, reason: 'No backup directory' });
+        return;
+      }
+      
+      // Get all backup files
+      const files = fs.readdirSync(backupDir)
+        .filter(file => file.startsWith('database_backup_') && file.endsWith('.sqlite'))
+        .map(file => ({
+          name: file,
+          path: path.join(backupDir, file),
+          stats: fs.statSync(path.join(backupDir, file))
+        }))
+        .sort((a, b) => b.stats.mtime - a.stats.mtime); // Sort by modification time, newest first
+      
+      console.log(`📦 Found ${files.length} backup files`);
+      
+      // Keep only the last 5 backups
+      const maxBackups = 5;
+      let cleanedCount = 0;
+      
+      if (files.length > maxBackups) {
+        const filesToDelete = files.slice(maxBackups);
+        
+        for (const file of filesToDelete) {
+          try {
+            fs.unlinkSync(file.path);
+            console.log(`🗑️  Deleted old backup: ${file.name}`);
+            cleanedCount++;
+          } catch (deleteError) {
+            console.error(`❌ Failed to delete backup ${file.name}:`, deleteError.message);
+          }
+        }
+      }
+      
+      const result = {
+        cleaned: cleanedCount,
+        total_backups: files.length,
+        remaining_backups: files.length - cleanedCount,
+        backup_directory: backupDir
+      };
+      
+      console.log(`✅ Backup cleanup completed: ${cleanedCount} old backups removed, ${result.remaining_backups} backups remaining`);
+      resolve(result);
+      
+    } catch (error) {
+      console.error('❌ Failed to cleanup old backups:', error.message);
+      reject(error);
+    }
+  });
+}
+
+function calculateFileChecksum(filePath) {
+  try {
+    const fileBuffer = fs.readFileSync(filePath);
+    const hashSum = crypto.createHash('sha256');
+    hashSum.update(fileBuffer);
+    return hashSum.digest('hex');
+  } catch (error) {
+    console.error(`❌ Failed to calculate checksum for ${filePath}:`, error.message);
+    throw error;
+  }
+}
+
+// Enhanced database connection with robust error handling
+function createDatabaseConnection(dbPath, retryCount = 0, maxRetries = 2) {
+  return new sqlite3.Database(dbPath, (err) => {
+    if (err) {
+      console.error(`❌ Error opening database (attempt ${retryCount + 1}/${maxRetries + 1}):`, err.message);
+      console.error('   Database path:', dbPath);
+      console.error('   Error code:', err.code);
+      console.error('   Error details:', err);
+      
+      // Provide specific guidance based on error type
+      if (err.code === 'SQLITE_CANTOPEN') {
+        console.error('   💡 This usually indicates file permission or path issues');
+        console.error('   💡 Check if the directory exists and is writable');
+      } else if (err.code === 'ENOENT') {
+        console.error('   💡 Directory or file path does not exist');
+      } else if (err.code === 'EACCES') {
+        console.error('   💡 Permission denied - check file/directory permissions');
+      }
+      
+      // Attempt recovery if retries are available
+      if (retryCount < maxRetries) {
+        console.log(`🔄 Attempting database connection recovery...`);
+        
+        // Try to implement fallback for connection issues
+        const fallbackResult = implementGracefulFallback(dbPath, err);
+        
+        if (fallbackResult.success && fallbackResult.path !== dbPath) {
+          console.log(`🔄 Retrying with fallback path: ${fallbackResult.path}`);
+          // Update global DB_PATH for consistency
+          DB_PATH = fallbackResult.path;
+          logDatabaseConfiguration();
+          
+          // Retry with new path
+          setTimeout(() => {
+            createDatabaseConnection(fallbackResult.path, retryCount + 1, maxRetries);
+          }, 1000);
+          return;
+        }
+      }
+      
+      console.error('💥 CRITICAL: Database connection failed after all recovery attempts');
+      console.error('   The application cannot function without a database connection');
+      
+      // Log final troubleshooting information
+      console.error(`🔍 Troubleshooting Information:
+        Current working directory: ${process.cwd()}
+        Database path attempted: ${dbPath}
+        Directory exists: ${fs.existsSync(path.dirname(dbPath))}
+        Directory writable: ${(() => {
+          try {
+            fs.accessSync(path.dirname(dbPath), fs.constants.W_OK);
+            return 'Yes';
+          } catch {
+            return 'No';
+          }
+        })()}
+        Environment: ${process.env.NODE_ENV || 'development'}
+        Railway volume mount: ${process.env.RAILWAY_VOLUME_MOUNT_PATH || 'Not set'}`);
+      
+      throw err;
+    } else {
+      console.log('✅ Connected to SQLite database successfully.');
+      console.log(`📁 Database file: ${dbPath}`);
+      
+      // Check if this is a new database or existing
+      if (fs.existsSync(dbPath)) {
+        const stats = fs.statSync(dbPath);
+        console.log(`📈 Database file size: ${stats.size} bytes`);
+        console.log(`📅 Database last modified: ${stats.mtime}`);
+        
+        if (stats.size === 0) {
+          console.log('📝 Database file is empty - will initialize with fresh schema');
+        } else {
+          console.log('📚 Existing database detected - will run migrations if needed');
+        }
+      } else {
+        console.log('🆕 New database file will be created');
+      }
+      
+      // Log success metrics
+      if (retryCount > 0) {
+        console.log(`✅ Database connection established after ${retryCount + 1} attempts`);
+      }
+      
+      console.log('🚀 Starting database initialization...');
+      initializeDatabase();
+    }
+  });
+}
+
+// Create database connection with enhanced error handling
+const db = createDatabaseConnection(DB_PATH);
 
 // Initialize database tables
 function initializeDatabase() {
+  // Create backup before running migrations
+  createDatabaseBackup()
+    .then((backupResult) => {
+      if (backupResult.created) {
+        console.log('📦 Pre-migration backup completed successfully');
+      } else {
+        console.log('📦 Pre-migration backup skipped:', backupResult.reason);
+      }
+      
+      // Cleanup old backups after successful backup
+      return cleanupOldBackups();
+    })
+    .then((cleanupResult) => {
+      console.log('🧹 Backup cleanup completed');
+      
+      // Proceed with database initialization
+      initializeDatabaseTables();
+    })
+    .catch((error) => {
+      console.error('⚠️  Backup operation failed, but continuing with database initialization:', error.message);
+      
+      // Continue with database initialization even if backup fails
+      initializeDatabaseTables();
+    });
+}
+
+// Separate function for database table initialization
+function initializeDatabaseTables() {
   db.serialize(() => {
     // Create users table with password_hash and email verification fields
     db.run(`CREATE TABLE IF NOT EXISTS users (
@@ -2839,6 +3395,242 @@ const dbHelpers = {
         }
       });
     });
+  },
+
+  // ============================================================================
+  // VOLUME AND FILESYSTEM HEALTH MONITORING
+  // ============================================================================
+
+  // Check volume health status
+  checkVolumeHealth: () => {
+    return new Promise((resolve, reject) => {
+      try {
+        console.log('🔍 Starting volume health check...');
+        
+        const isProduction = process.env.NODE_ENV === 'production';
+        const volumePath = isProduction ? '/app/data' : path.dirname(DB_PATH);
+        
+        // Perform volume verification
+        const verification = verifyVolumeMount(volumePath);
+        
+        const volumeHealth = {
+          status: verification.exists && verification.writable ? 'healthy' : 'unhealthy',
+          path: verification.path,
+          exists: verification.exists,
+          isDirectory: verification.isDirectory,
+          readable: verification.readable,
+          writable: verification.writable,
+          mounted: verification.mounted,
+          errors: verification.errors,
+          spaceInfo: verification.spaceInfo,
+          environment: process.env.NODE_ENV || 'development',
+          isProductionVolume: isProduction && volumePath === '/app/data'
+        };
+
+        // Add warnings for production issues
+        if (isProduction && !verification.mounted) {
+          volumeHealth.warnings = ['Volume may not be properly mounted in Railway'];
+        }
+
+        if (isProduction && DB_PATH !== '/app/data/database.sqlite') {
+          volumeHealth.warnings = volumeHealth.warnings || [];
+          volumeHealth.warnings.push('Database is using fallback path, not persistent volume');
+        }
+
+        console.log(`✅ Volume health check completed: ${volumeHealth.status}`);
+        resolve(volumeHealth);
+        
+      } catch (error) {
+        console.error('❌ Volume health check failed:', error);
+        reject(error);
+      }
+    });
+  },
+
+  // Check backup system health
+  checkBackupHealth: () => {
+    return new Promise(async (resolve, reject) => {
+      try {
+        console.log('🔍 Starting backup health check...');
+        
+        const backupDir = path.join(path.dirname(DB_PATH), 'backups');
+        const backupHealth = {
+          status: 'healthy',
+          backupDirectory: backupDir,
+          directoryExists: fs.existsSync(backupDir),
+          backupCount: 0,
+          lastBackup: null,
+          totalBackupSize: 0,
+          oldestBackup: null,
+          newestBackup: null,
+          backupFiles: []
+        };
+
+        // Check if backup directory exists
+        if (!backupHealth.directoryExists) {
+          backupHealth.status = 'warning';
+          backupHealth.message = 'Backup directory does not exist';
+          console.log('⚠️  Backup directory does not exist');
+          resolve(backupHealth);
+          return;
+        }
+
+        // Get backup files
+        try {
+          const files = fs.readdirSync(backupDir)
+            .filter(file => file.startsWith('database_backup_') && file.endsWith('.sqlite'))
+            .map(file => {
+              const filePath = path.join(backupDir, file);
+              const stats = fs.statSync(filePath);
+              return {
+                name: file,
+                path: filePath,
+                size: stats.size,
+                created: stats.birthtime,
+                modified: stats.mtime
+              };
+            })
+            .sort((a, b) => b.modified - a.modified); // Sort by modification time, newest first
+
+          backupHealth.backupCount = files.length;
+          backupHealth.backupFiles = files.slice(0, 5); // Include details for last 5 backups
+          backupHealth.totalBackupSize = files.reduce((total, file) => total + file.size, 0);
+
+          if (files.length > 0) {
+            backupHealth.newestBackup = {
+              filename: files[0].name,
+              created: files[0].created,
+              size: files[0].size
+            };
+            backupHealth.lastBackup = backupHealth.newestBackup.created;
+            
+            backupHealth.oldestBackup = {
+              filename: files[files.length - 1].name,
+              created: files[files.length - 1].created,
+              size: files[files.length - 1].size
+            };
+          }
+
+          // Check if backups are recent (within last 24 hours for production)
+          if (process.env.NODE_ENV === 'production' && files.length > 0) {
+            const lastBackupAge = Date.now() - new Date(backupHealth.lastBackup).getTime();
+            const hoursOld = lastBackupAge / (1000 * 60 * 60);
+            
+            if (hoursOld > 24) {
+              backupHealth.status = 'warning';
+              backupHealth.message = `Last backup is ${Math.round(hoursOld)} hours old`;
+            }
+          }
+
+        } catch (readError) {
+          backupHealth.status = 'unhealthy';
+          backupHealth.error = `Failed to read backup directory: ${readError.message}`;
+        }
+
+        console.log(`✅ Backup health check completed: ${backupHealth.status} (${backupHealth.backupCount} backups)`);
+        resolve(backupHealth);
+        
+      } catch (error) {
+        console.error('❌ Backup health check failed:', error);
+        reject(error);
+      }
+    });
+  },
+
+  // Check filesystem health
+  checkFilesystemHealth: () => {
+    return new Promise((resolve, reject) => {
+      try {
+        console.log('🔍 Starting filesystem health check...');
+        
+        const dbDir = path.dirname(DB_PATH);
+        const filesystemHealth = {
+          status: 'healthy',
+          databasePath: DB_PATH,
+          databaseDirectory: dbDir,
+          databaseExists: fs.existsSync(DB_PATH),
+          databaseSize: 0,
+          directoryWritable: false,
+          directoryReadable: false,
+          freeSpace: null,
+          permissions: {}
+        };
+
+        // Check database file
+        if (filesystemHealth.databaseExists) {
+          const dbStats = fs.statSync(DB_PATH);
+          filesystemHealth.databaseSize = dbStats.size;
+          filesystemHealth.databaseLastModified = dbStats.mtime;
+          
+          // Check database file permissions
+          try {
+            fs.accessSync(DB_PATH, fs.constants.R_OK);
+            filesystemHealth.permissions.databaseReadable = true;
+          } catch {
+            filesystemHealth.permissions.databaseReadable = false;
+            filesystemHealth.status = 'unhealthy';
+          }
+
+          try {
+            fs.accessSync(DB_PATH, fs.constants.W_OK);
+            filesystemHealth.permissions.databaseWritable = true;
+          } catch {
+            filesystemHealth.permissions.databaseWritable = false;
+            filesystemHealth.status = 'unhealthy';
+          }
+        }
+
+        // Check directory permissions
+        try {
+          fs.accessSync(dbDir, fs.constants.R_OK);
+          filesystemHealth.directoryReadable = true;
+        } catch {
+          filesystemHealth.directoryReadable = false;
+          filesystemHealth.status = 'unhealthy';
+        }
+
+        try {
+          fs.accessSync(dbDir, fs.constants.W_OK);
+          filesystemHealth.directoryWritable = true;
+        } catch {
+          filesystemHealth.directoryWritable = false;
+          filesystemHealth.status = 'unhealthy';
+        }
+
+        // Test write capability
+        if (filesystemHealth.directoryWritable) {
+          try {
+            const testFile = path.join(dbDir, '.fs_health_test_' + Date.now());
+            fs.writeFileSync(testFile, 'filesystem health test');
+            fs.unlinkSync(testFile);
+            filesystemHealth.writeTestPassed = true;
+          } catch (writeError) {
+            filesystemHealth.writeTestPassed = false;
+            filesystemHealth.writeTestError = writeError.message;
+            filesystemHealth.status = 'unhealthy';
+          }
+        }
+
+        // Get disk space information
+        try {
+          const spaceInfo = checkVolumeSpaceAvailability(dbDir);
+          if (spaceInfo.available) {
+            filesystemHealth.freeSpace = spaceInfo.free;
+            filesystemHealth.totalSpace = spaceInfo.total;
+            filesystemHealth.usedSpace = spaceInfo.used;
+          }
+        } catch (spaceError) {
+          filesystemHealth.spaceCheckError = spaceError.message;
+        }
+
+        console.log(`✅ Filesystem health check completed: ${filesystemHealth.status}`);
+        resolve(filesystemHealth);
+        
+      } catch (error) {
+        console.error('❌ Filesystem health check failed:', error);
+        reject(error);
+      }
+    });
   }
 };
 
@@ -2848,5 +3640,8 @@ module.exports = {
   testConnection,
   closeDatabase,
   initializeDatabase,
-  seedCapabilityCategories
+  seedCapabilityCategories,
+  createDatabaseBackup,
+  cleanupOldBackups,
+  calculateFileChecksum
 };
