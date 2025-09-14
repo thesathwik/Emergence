@@ -6,7 +6,8 @@
     "start": "node server.js",
     "dev": "npx nodemon server.js",
     "build": "cd frontend && npm install && npm run build",
-    "postinstall": "cd frontend && npm install"
+    "postinstall": "cd frontend && npm install",
+    "check-volume": "node check-volume-status.js"
   },
   "keywords": [],
   "author": "",

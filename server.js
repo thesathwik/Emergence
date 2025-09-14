@@ -274,6 +274,22 @@ app.get('/api/health', async (req, res) => {
       environment: process.env.NODE_ENV || 'development'
     };
 
+    // Always check for critical volume issues in production
+    if (process.env.NODE_ENV === 'production') {
+      const { db } = require('./database');
+      const dbPath = db.filename || process.env.DB_PATH || '/app/data/database.sqlite';
+      
+      if (dbPath.includes('/tmp/')) {
+        health.status = 'CRITICAL';
+        health.volume_warning = {
+          status: 'CRITICAL',
+          message: 'Database using temporary storage - data will be lost on restart!',
+          action_required: 'Create Railway volume at /app/data',
+          documentation: 'See RAILWAY_VOLUME_SETUP.md'
+        };
+      }
+    }
+
     // If detailed health check is requested
     if (req.query.detailed === 'true') {
       try {
@@ -338,7 +354,7 @@ app.get('/api/health', async (req, res) => {
       }
     }
 
-    const statusCode = health.status === 'OK' ? 200 : 503;
+    const statusCode = health.status === 'OK' ? 200 : (health.status === 'CRITICAL' ? 500 : 503);
     res.status(statusCode).json(health);
   } catch (error) {
     console.error('Health check error:', error);

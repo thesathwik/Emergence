@@ -197,12 +197,23 @@ if (process.env.NODE_ENV === 'production') {
       } catch (createError) {
         console.error(`❌ Failed to create volume directory: ${createError.message}`);
         console.error(`   This indicates the Railway volume is not properly mounted`);
-        console.log(`⚠️  Falling back to container filesystem: /app/database.sqlite`);
-        DB_PATH = '/app/database.sqlite';
+        console.error(`   CRITICAL: No persistent storage available - data will be lost on restart!`);
+        console.error(`   Please create and mount a Railway volume at /app/data`);
+        
+        // Use a temporary path but warn heavily about data loss
+        DB_PATH = '/tmp/database.sqlite';
+        console.error(`⚠️  USING TEMPORARY STORAGE: ${DB_PATH}`);
+        console.error(`⚠️  ALL DATA WILL BE LOST ON CONTAINER RESTART!`);
       }
     } else {
-      console.log(`⚠️  Volume directory exists but has issues, falling back to container filesystem`);
-      DB_PATH = '/app/database.sqlite';
+      console.error(`⚠️  Volume directory exists but has issues`);
+      console.error(`   CRITICAL: No persistent storage available - data will be lost on restart!`);
+      console.error(`   Please check Railway volume configuration at /app/data`);
+      
+      // Use a temporary path but warn heavily about data loss
+      DB_PATH = '/tmp/database.sqlite';
+      console.error(`⚠️  USING TEMPORARY STORAGE: ${DB_PATH}`);
+      console.error(`⚠️  ALL DATA WILL BE LOST ON CONTAINER RESTART!`);
     }
   }
 } else {
@@ -370,14 +381,27 @@ function logDatabaseConfiguration() {
     // Check if we're using a fallback path
     const expectedProductionPath = '/app/data/database.sqlite';
     if (DB_PATH !== expectedProductionPath) {
-      console.log(`  ⚠️  WARNING: Using fallback database path!`);
+      console.log(`  ❌ CRITICAL: Using fallback database path!`);
       console.log(`     Expected: ${expectedProductionPath}`);
       console.log(`     Actual: ${DB_PATH}`);
-      console.log(`     This may indicate Railway volume mount issues.`);
+      console.log(`     🚨 DATA WILL BE LOST ON RESTART!`);
+      console.log(`     📖 See RAILWAY_VOLUME_SETUP.md for fix instructions`);
+    } else {
+      console.log(`  ✅ Using persistent volume storage`);
     }
   }
   
   console.log(`  Final database location: ${DB_PATH}`);
+  
+  // Add critical warning if using temporary storage
+  if (DB_PATH.includes('/tmp/')) {
+    console.log(`\n🚨🚨🚨 CRITICAL DATABASE WARNING 🚨🚨🚨`);
+    console.log(`Database is using TEMPORARY storage: ${DB_PATH}`);
+    console.log(`ALL DATA WILL BE LOST when the container restarts!`);
+    console.log(`Please create a Railway volume immediately!`);
+    console.log(`See RAILWAY_VOLUME_SETUP.md for instructions`);
+    console.log(`🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨\n`);
+  }
 }
 
 logDatabaseConfiguration();
