@@ -8,6 +8,7 @@ const CodeScanner = require('./utils/codeScanner');
 
 // Import auth routes
 const authRoutes = require('./routes/auth');
+const adminRoutes = require('./routes/admin');
 
 // Import auth middleware
 const { verifyToken, requireVerifiedEmail, JWT_SECRET } = require('./auth');
@@ -368,6 +369,7 @@ app.get('/api/health', async (req, res) => {
 
 // Auth routes
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Example API routes
 app.get('/api/users', (req, res) => {
