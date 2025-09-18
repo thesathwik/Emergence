@@ -384,20 +384,22 @@ const BrowseAgentsPage: React.FC = () => {
                 {viewMode === 'grid' ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {filteredAndSortedAgents.map((agent) => (
-                      <AgentCard 
-                        key={agent.id} 
-                        agent={agent} 
+                      <AgentCard
+                        key={agent.id}
+                        agent={agent}
                         onDownloadSuccess={() => fetchAgents(selectedCategory)}
+                        onDeleteSuccess={() => fetchAgents(selectedCategory)}
                       />
                     ))}
                   </div>
                 ) : (
                   <div className="space-y-6 max-w-4xl mx-auto">
                     {filteredAndSortedAgents.map((agent) => (
-                      <AgentCardCompact 
-                        key={agent.id} 
-                        agent={agent} 
+                      <AgentCardCompact
+                        key={agent.id}
+                        agent={agent}
                         onDownloadSuccess={() => fetchAgents(selectedCategory)}
+                        onDeleteSuccess={() => fetchAgents(selectedCategory)}
                       />
                     ))}
                   </div>

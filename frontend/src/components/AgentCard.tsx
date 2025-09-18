@@ -12,13 +12,17 @@ interface AgentCardProps {
   agent: Agent;
   className?: string;
   onDownloadSuccess?: () => void;
+  onDeleteSuccess?: () => void;
 }
 
-const AgentCard: React.FC<AgentCardProps> = ({ agent, className = '', onDownloadSuccess }) => {
+const AgentCard: React.FC<AgentCardProps> = ({ agent, className = '', onDownloadSuccess, onDeleteSuccess }) => {
   const [downloading, setDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { user } = useAuth();
   
   // Check if this agent belongs to the current user
@@ -47,6 +51,50 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, className = '', onDownload
       'Other': 'bg-gray-50 text-gray-700 border-gray-100'
     };
     return colorMap[category] || colorMap['Other'];
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteCancel = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowDeleteConfirm(false);
+  };
+
+  const handleDeleteConfirm = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (deleting) return;
+
+    setDeleting(true);
+    setDeleteError(null);
+
+    try {
+      await apiService.deleteAgent(agent.id.toString());
+
+      // Call callback to refresh parent component
+      if (onDeleteSuccess) {
+        onDeleteSuccess();
+      }
+
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to delete agent';
+      setDeleteError(errorMessage);
+      console.error('Error deleting agent:', err);
+
+      // Reset error after delay
+      setTimeout(() => {
+        setDeleteError(null);
+      }, 3000);
+    } finally {
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
   };
 
   const handleDownload = async (e: React.MouseEvent) => {
@@ -197,6 +245,49 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, className = '', onDownload
               View Details
             </span>
             <div className="flex items-center space-x-3">
+              {/* Delete Button - Only show for user's own agents */}
+              {isUserAgent && (
+                <>
+                  {showDeleteConfirm ? (
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={handleDeleteCancel}
+                        className="flex items-center px-3 py-2 text-xs font-light rounded-2xl text-gray-600 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 transition-all duration-200"
+                        title="Cancel"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleDeleteConfirm}
+                        disabled={deleting}
+                        className="flex items-center px-3 py-2 text-xs font-light rounded-2xl text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                        title="Confirm Delete"
+                      >
+                        {deleting ? (
+                          <>
+                            <LoadingSpinner size="sm" color="white" />
+                            <span className="ml-1">Deleting...</span>
+                          </>
+                        ) : (
+                          'Delete'
+                        )}
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleDeleteClick}
+                      className="flex items-center px-3 py-2 text-xs font-light rounded-2xl text-red-600 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200"
+                      title="Delete Agent"
+                    >
+                      <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      Delete
+                    </button>
+                  )}
+                </>
+              )}
+
               {/* Download Button */}
               <button
                 onClick={handleDownload}
@@ -235,10 +326,15 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, className = '', onDownload
             </div>
           </div>
           
-          {/* Error Message */}
+          {/* Error Messages */}
           {downloadError && (
             <div className="mt-2 text-xs text-red-600 bg-red-50 px-2 py-1 rounded">
               {downloadError}
+            </div>
+          )}
+          {deleteError && (
+            <div className="mt-2 text-xs text-red-600 bg-red-50 px-2 py-1 rounded">
+              {deleteError}
             </div>
           )}
         </div>
@@ -248,15 +344,62 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, className = '', onDownload
 };
 
 // Alternative compact version for lists
-export const AgentCardCompact: React.FC<AgentCardProps> = ({ agent, className = '', onDownloadSuccess }) => {
+export const AgentCardCompact: React.FC<AgentCardProps> = ({ agent, className = '', onDownloadSuccess, onDeleteSuccess }) => {
   const [downloading, setDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { user } = useAuth();
   
   // Check if this agent belongs to the current user
   const isUserAgent = user && agent.user_id && user.id === agent.user_id;
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteCancel = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowDeleteConfirm(false);
+  };
+
+  const handleDeleteConfirm = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (deleting) return;
+
+    setDeleting(true);
+    setDeleteError(null);
+
+    try {
+      await apiService.deleteAgent(agent.id.toString());
+
+      // Call callback to refresh parent component
+      if (onDeleteSuccess) {
+        onDeleteSuccess();
+      }
+
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to delete agent';
+      setDeleteError(errorMessage);
+      console.error('Error deleting agent:', err);
+
+      // Reset error after delay
+      setTimeout(() => {
+        setDeleteError(null);
+      }, 3000);
+    } finally {
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
 
   const handleDownload = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -381,6 +524,49 @@ export const AgentCardCompact: React.FC<AgentCardProps> = ({ agent, className = 
               <div className="flex items-center space-x-3">
                 <span>{agent.download_count} downloads</span>
                 <div className="flex items-center space-x-2">
+                  {/* Delete Button - Only show for user's own agents */}
+                  {isUserAgent && (
+                    <>
+                      {showDeleteConfirm ? (
+                        <div className="flex items-center space-x-1">
+                          <button
+                            onClick={handleDeleteCancel}
+                            className="flex items-center px-2 py-1 text-xs font-light rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-1 focus:ring-gray-400 transition-all duration-200"
+                            title="Cancel"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={handleDeleteConfirm}
+                            disabled={deleting}
+                            className="flex items-center px-2 py-1 text-xs font-light rounded-xl text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                            title="Confirm Delete"
+                          >
+                            {deleting ? (
+                              <>
+                                <LoadingSpinner size="sm" color="white" />
+                                <span className="ml-1">Del...</span>
+                              </>
+                            ) : (
+                              'Delete'
+                            )}
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={handleDeleteClick}
+                          className="flex items-center px-2 py-1 text-xs font-light rounded-xl text-red-600 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-1 focus:ring-red-500 transition-all duration-200"
+                          title="Delete Agent"
+                        >
+                          <svg className="w-2 h-2 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                          Del
+                        </button>
+                      )}
+                    </>
+                  )}
+
                   {/* Download Button */}
                   <button
                     onClick={handleDownload}
@@ -419,10 +605,15 @@ export const AgentCardCompact: React.FC<AgentCardProps> = ({ agent, className = 
               </div>
             </div>
             
-            {/* Error Message */}
+            {/* Error Messages */}
             {downloadError && (
               <div className="mt-1 text-xs text-red-600 bg-red-50 px-2 py-1 rounded">
                 {downloadError}
+              </div>
+            )}
+            {deleteError && (
+              <div className="mt-1 text-xs text-red-600 bg-red-50 px-2 py-1 rounded">
+                {deleteError}
               </div>
             )}
           </div>
