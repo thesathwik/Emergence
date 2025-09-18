@@ -60,7 +60,7 @@ async function sendEmailViaWebAPI(email, name, token, baseUrl) {
         to: [{ email: email, name: name }],
         subject: 'Verify your email address - Emergence'
       }],
-      from: { email: 'emergence.a2a@gmail.com', name: 'Emergence Platform' },
+      from: { email: process.env.FROM_EMAIL || 'emergence.a2a@gmail.com', name: 'Emergence Platform' },
       content: [{
         type: 'text/html',
         value: `
@@ -170,7 +170,7 @@ async function sendVerificationEmail(email, name, token, baseUrl) {
   console.log('SendGrid configuration check:', {
     SENDGRID_API_KEY: process.env.SENDGRID_API_KEY ? 'SET' : 'NOT SET',
     BASE_URL: baseUrl,
-    FROM_EMAIL: 'emergence.a2a@gmail.com'
+    FROM_EMAIL: process.env.FROM_EMAIL || 'emergence.a2a@gmail.com'
   });
 
   // Check if SendGrid API key is set up
@@ -187,7 +187,7 @@ async function sendVerificationEmail(email, name, token, baseUrl) {
   const verificationUrl = `${baseUrl}/verify-email?token=${token}`;
   
   const mailOptions = {
-    from: `"Emergence Platform" <emergence.a2a@gmail.com>`,
+    from: `"Emergence Platform" <${process.env.FROM_EMAIL || 'emergence.a2a@gmail.com'}>`,
     to: email,
     subject: 'Verify your email address - Emergence',
     html: `
@@ -302,7 +302,7 @@ async function sendPasswordResetEmail(email, name, token, baseUrl) {
   const resetUrl = `${baseUrl}/reset-password?token=${token}`;
   
   const mailOptions = {
-    from: `"Emergence Platform" <emergence.a2a@gmail.com>`,
+    from: `"Emergence Platform" <${process.env.FROM_EMAIL || 'emergence.a2a@gmail.com'}>`,
     to: email,
     subject: 'Reset your password - Emergence',
     html: `

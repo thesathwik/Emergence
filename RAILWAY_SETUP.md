@@ -8,6 +8,7 @@ Set these environment variables in your Railway dashboard:
 ```bash
 # SendGrid Email Configuration
 SENDGRID_API_KEY=your_new_sendgrid_api_key_here
+FROM_EMAIL=your-verified-sender-email@domain.com
 
 # Production Base URL
 BASE_URL=https://emergence-production.up.railway.app
