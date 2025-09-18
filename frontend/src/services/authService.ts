@@ -88,7 +88,10 @@ export const authService = {
    */
   register: async (credentials: RegisterCredentials): Promise<AuthResponse> => {
     try {
-      const response = await authApi.post<AuthResponse>('/register', credentials);
+      // Use longer timeout for registration due to email processing
+      const response = await authApi.post<AuthResponse>('/register', credentials, {
+        timeout: 60000 // 60 second timeout for registration
+      });
       return response.data;
     } catch (error) {
       console.error('Registration error:', error);

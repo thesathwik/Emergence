@@ -97,44 +97,40 @@ router.post('/register', registerValidation, async (req, res) => {
     // Save verification token to database
     await dbHelpers.setVerificationToken(newUser.id, verificationToken, expiresAt);
 
-    // Send verification email
+    // Send verification email asynchronously to avoid blocking the response
     const baseUrl = process.env.BASE_URL || `http://${req.get('host')}`;
-    const emailResult = await sendVerificationEmail(newUser.email, newUser.name, verificationToken, baseUrl);
 
-    if (!emailResult.success) {
-      console.warn('Email verification not sent:', emailResult.message);
-      // Log the verification URL for manual verification if needed
-      if (emailResult.verificationUrl) {
-        console.log('Manual verification URL:', emailResult.verificationUrl);
-      }
-    }
-
-    // Return success response without token (user must verify first)
-    let responseMessage = 'User registered successfully.';
-    let verificationUrl = null;
-
-    if (emailResult.success) {
-      responseMessage += ' Please check your email to verify your account before logging in.';
-    } else {
-      responseMessage += ' Email delivery is currently experiencing issues.';
-      if (emailResult.verificationUrl) {
-        verificationUrl = emailResult.verificationUrl;
-        responseMessage += ' Please use the manual verification link provided to complete your registration.';
-      }
-    }
-
+    // Respond to user immediately
     res.status(201).json({
       success: true,
-      message: responseMessage,
+      message: 'User registered successfully. Please check your email to verify your account before logging in.',
       user: {
         id: newUser.id,
         name: newUser.name,
         email: newUser.email,
         isVerified: false
       },
-      emailSent: emailResult.success,
-      verificationUrl: verificationUrl,
       requiresVerification: true
+    });
+
+    // Send email in background (non-blocking)
+    setImmediate(async () => {
+      try {
+        console.log(`Sending verification email to ${newUser.email} in background...`);
+        const emailResult = await sendVerificationEmail(newUser.email, newUser.name, verificationToken, baseUrl);
+
+        if (emailResult.success) {
+          console.log(`✅ Verification email sent successfully to ${newUser.email}`);
+        } else {
+          console.warn(`❌ Email verification not sent to ${newUser.email}:`, emailResult.message);
+          // Log the verification URL for manual verification if needed
+          if (emailResult.verificationUrl) {
+            console.log(`Manual verification URL for ${newUser.email}:`, emailResult.verificationUrl);
+          }
+        }
+      } catch (error) {
+        console.error(`❌ Background email sending failed for ${newUser.email}:`, error);
+      }
     });
 
   } catch (error) {

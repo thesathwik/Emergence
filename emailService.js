@@ -165,7 +165,7 @@ async function sendEmailViaWebAPI(email, name, token, baseUrl) {
   });
 }
 
-// Send verification email
+// Send verification email with timeout protection
 async function sendVerificationEmail(email, name, token, baseUrl) {
   console.log('SendGrid configuration check:', {
     SENDGRID_API_KEY: process.env.SENDGRID_API_KEY ? 'SET' : 'NOT SET',
@@ -173,6 +173,17 @@ async function sendVerificationEmail(email, name, token, baseUrl) {
     FROM_EMAIL: process.env.FROM_EMAIL || 'emergence.a2a@gmail.com'
   });
 
+  // Wrap the entire email sending process with a timeout
+  return Promise.race([
+    sendEmailWithFallbacks(email, name, token, baseUrl),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Email sending timeout after 45 seconds')), 45000)
+    )
+  ]);
+}
+
+// Internal function to handle email sending with fallbacks
+async function sendEmailWithFallbacks(email, name, token, baseUrl) {
   // Check if SendGrid API key is set up
   if (!process.env.SENDGRID_API_KEY) {
     console.warn('SendGrid API key not set up. Skipping email send.');
