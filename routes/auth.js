@@ -116,10 +116,10 @@ router.post('/register', registerValidation, async (req, res) => {
     if (emailResult.success) {
       responseMessage += ' Please check your email to verify your account before logging in.';
     } else {
-      responseMessage += ' Email verification failed due to connection issues.';
+      responseMessage += ' Email delivery is currently experiencing issues.';
       if (emailResult.verificationUrl) {
         verificationUrl = emailResult.verificationUrl;
-        responseMessage += ' You can manually verify your email using the provided link before logging in.';
+        responseMessage += ' Please use the manual verification link provided to complete your registration.';
       }
     }
 
