@@ -40,7 +40,7 @@ const getEmailConfigFallback = () => {
 };
 
 // Create primary transporter
-let transporter = nodemailer.createTransporter(getEmailConfig());
+let transporter = nodemailer.createTransport(getEmailConfig());
 
 // Create fallback transporter
 let fallbackTransporter = null;
