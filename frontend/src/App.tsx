@@ -10,6 +10,7 @@ import BrowseAgentsPage from './pages/BrowseAgentsPage';
 import AgentDetailPage from './pages/AgentDetailPage';
 import DeveloperHub from './pages/DeveloperHub';
 import SettingsPage from './pages/SettingsPage';
+import MyAgentsPage from './pages/MyAgentsPage';
 import Login from './components/Login';
 import Register from './components/Register';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -44,6 +45,11 @@ function App() {
               } />
               <Route path="/agents" element={<BrowseAgentsPage />} />
               <Route path="/agents/:id" element={<AgentDetailPage />} />
+              <Route path="/my-agents" element={
+                <ProtectedRoute requireAuth={true}>
+                  <MyAgentsPage />
+                </ProtectedRoute>
+              } />
               <Route path="/developers" element={<DeveloperHub />} />
               <Route path="/settings" element={
                 <ProtectedRoute requireAuth={true}>

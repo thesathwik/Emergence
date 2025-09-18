@@ -1,14 +1,14 @@
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 
-// Email configuration
+// SendGrid configuration for Emergence
 const emailConfig = {
-  host: process.env.SMTP_HOST,
-  port: parseInt(process.env.SMTP_PORT, 10), // Should be 465
-  secure: process.env.SMTP_SECURE === 'true', // This converts string to boolean
+  host: 'smtp.sendgrid.net',
+  port: 587,
+  secure: false, // true for 465, false for other ports
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS
+    user: 'apikey', // This is the literal string 'apikey' for SendGrid
+    pass: process.env.SENDGRID_API_KEY // Your SendGrid API key
   },
   connectionTimeout: 10000,
   greetingTimeout: 10000,
@@ -25,22 +25,19 @@ function generateVerificationToken() {
 
 // Send verification email
 async function sendVerificationEmail(email, name, token, baseUrl) {
-  console.log('Email configuration check:', {
-    SMTP_HOST: process.env.SMTP_HOST,
-    SMTP_PORT: process.env.SMTP_PORT,
-    SMTP_SECURE: process.env.SMTP_SECURE,
-    SMTP_USER: process.env.SMTP_USER ? 'SET' : 'NOT SET',
-    SMTP_PASS: process.env.SMTP_PASS ? 'SET' : 'NOT SET',
-    BASE_URL: baseUrl
+  console.log('SendGrid configuration check:', {
+    SENDGRID_API_KEY: process.env.SENDGRID_API_KEY ? 'SET' : 'NOT SET',
+    BASE_URL: baseUrl,
+    FROM_EMAIL: 'emergence.a2a@gmail.com'
   });
 
-  // Check if email configuration is set up
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.warn('Email configuration not set up. Skipping email send.');
+  // Check if SendGrid API key is set up
+  if (!process.env.SENDGRID_API_KEY) {
+    console.warn('SendGrid API key not set up. Skipping email send.');
     console.log('Verification URL would be:', `${baseUrl}/verify-email?token=${token}`);
     return {
       success: false,
-      message: 'Email configuration not set up',
+      message: 'SendGrid API key not configured',
       verificationUrl: `${baseUrl}/verify-email?token=${token}`
     };
   }
@@ -48,7 +45,7 @@ async function sendVerificationEmail(email, name, token, baseUrl) {
   const verificationUrl = `${baseUrl}/verify-email?token=${token}`;
   
   const mailOptions = {
-    from: `"Emergence Platform" <${process.env.SMTP_USER}>`,
+    from: `"Emergence Platform" <emergence.a2a@gmail.com>`,
     to: email,
     subject: 'Verify your email address - Emergence',
     html: `
@@ -139,7 +136,7 @@ async function sendPasswordResetEmail(email, name, token, baseUrl) {
   const resetUrl = `${baseUrl}/reset-password?token=${token}`;
   
   const mailOptions = {
-    from: `"Emergence Platform" <${process.env.SMTP_USER}>`,
+    from: `"Emergence Platform" <emergence.a2a@gmail.com>`,
     to: email,
     subject: 'Reset your password - Emergence',
     html: `

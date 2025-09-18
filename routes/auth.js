@@ -84,69 +84,57 @@ router.post('/register', registerValidation, async (req, res) => {
       password_hash: passwordHash
     };
 
-    // Add is_verified: 1 to user data (skip email verification temporarily)
-    userData.is_verified = 1;
+    // User starts as unverified - email verification required
+    userData.is_verified = 0;
     
     // Save user to database
     const newUser = await dbHelpers.createUser(userData);
 
-    // COMMENTED OUT: Email verification temporarily disabled
-    // // Generate verification token
-    // const verificationToken = generateVerificationToken();
-    // const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours
+    // Generate verification token
+    const verificationToken = generateVerificationToken();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours
 
-    // // Save verification token to database
-    // await dbHelpers.setVerificationToken(newUser.id, verificationToken, expiresAt);
+    // Save verification token to database
+    await dbHelpers.setVerificationToken(newUser.id, verificationToken, expiresAt);
 
-    // // Send verification email
-    // const baseUrl = process.env.BASE_URL || `http://${req.get('host')}`;
-    // const emailResult = await sendVerificationEmail(newUser.email, newUser.name, verificationToken, baseUrl);
-    
-    // if (!emailResult.success) {
-    //   console.warn('Email verification not sent:', emailResult.message);
-    //   // Log the verification URL for manual verification if needed
-    //   if (emailResult.verificationUrl) {
-    //     console.log('Manual verification URL:', emailResult.verificationUrl);
-    //   }
-    // }
+    // Send verification email
+    const baseUrl = process.env.BASE_URL || `http://${req.get('host')}`;
+    const emailResult = await sendVerificationEmail(newUser.email, newUser.name, verificationToken, baseUrl);
 
-    // Generate JWT token (user is immediately verified)
-    const token = generateToken({
-      id: newUser.id,
-      email: newUser.email,
-      name: newUser.name,
-      isVerified: true
-    });
+    if (!emailResult.success) {
+      console.warn('Email verification not sent:', emailResult.message);
+      // Log the verification URL for manual verification if needed
+      if (emailResult.verificationUrl) {
+        console.log('Manual verification URL:', emailResult.verificationUrl);
+      }
+    }
 
-    // COMMENTED OUT: Email verification response temporarily disabled
-    // // Return success response without token (user must verify first)
-    // let responseMessage = 'User registered successfully.';
-    // let verificationUrl = null;
-    
-    // if (emailResult.success) {
-    //   responseMessage += ' Please check your email to verify your account before logging in.';
-    // } else {
-    //   responseMessage += ' Email verification failed due to connection issues.';
-    //   if (emailResult.verificationUrl) {
-    //     verificationUrl = emailResult.verificationUrl;
-    //     responseMessage += ' You can manually verify your email using the provided link before logging in.';
-    //   }
-    // }
-    
+    // Return success response without token (user must verify first)
+    let responseMessage = 'User registered successfully.';
+    let verificationUrl = null;
+
+    if (emailResult.success) {
+      responseMessage += ' Please check your email to verify your account before logging in.';
+    } else {
+      responseMessage += ' Email verification failed due to connection issues.';
+      if (emailResult.verificationUrl) {
+        verificationUrl = emailResult.verificationUrl;
+        responseMessage += ' You can manually verify your email using the provided link before logging in.';
+      }
+    }
+
     res.status(201).json({
       success: true,
-      message: 'User registered successfully. You can now log in.',
+      message: responseMessage,
       user: {
         id: newUser.id,
         name: newUser.name,
         email: newUser.email,
-        isVerified: true
+        isVerified: false
       },
-      token: token
-      // COMMENTED OUT: Email verification fields temporarily disabled
-      // emailSent: emailResult.success,
-      // verificationUrl: verificationUrl,
-      // requiresVerification: true
+      emailSent: emailResult.success,
+      verificationUrl: verificationUrl,
+      requiresVerification: true
     });
 
   } catch (error) {
@@ -207,21 +195,20 @@ router.post('/login', loginValidation, async (req, res) => {
       });
     }
 
-    // COMMENTED OUT: Email verification check temporarily disabled
-    // // Check if user is verified
-    // if (user.is_verified !== 1) {
-    //   return res.status(403).json({
-    //     success: false,
-    //     message: 'Please verify your email address before logging in. Check your inbox for a verification link.',
-    //     requiresVerification: true,
-    //     user: {
-    //       id: user.id,
-    //       name: user.name,
-    //       email: user.email,
-    //       isVerified: false
-    //     }
-    //   });
-    // }
+    // Check if user is verified
+    if (user.is_verified !== 1) {
+      return res.status(403).json({
+        success: false,
+        message: 'Please verify your email address before logging in. Check your inbox for a verification link.',
+        requiresVerification: true,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          isVerified: false
+        }
+      });
+    }
 
     // Generate JWT token (only for verified users)
     const token = generateToken({
