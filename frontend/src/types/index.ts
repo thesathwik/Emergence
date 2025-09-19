@@ -100,4 +100,6 @@ export interface AuthError {
     field: string;
     message: string;
   }>;
+  requiresVerification?: boolean;
+  user?: User;
 }
