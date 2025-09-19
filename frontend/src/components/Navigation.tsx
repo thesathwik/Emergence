@@ -120,8 +120,8 @@ const Navigation: React.FC = () => {
 
       {/* User Menu Dropdown - Positioned Relative to Avatar */}
       {showUserSidebar && (
-        <div 
-          className="fixed inset-0 z-40"
+        <div
+          className="fixed inset-0 z-50"
           onClick={() => setShowUserSidebar(false)}
         >
           <div className="absolute top-20 right-8 w-72 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden">
@@ -155,12 +155,12 @@ const Navigation: React.FC = () => {
                     console.log(`Dropdown navigation to: ${item.path}`);
                     handleNavigation(item.path);
                   }}
-                  className="block w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 text-left"
+                  className="flex items-center w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 text-left"
                 >
-                  <svg className="w-4 h-4 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 mr-3 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
                   </svg>
-                  {item.name}
+                  <span className="flex-1">{item.name}</span>
                 </button>
               ))}
               
@@ -174,12 +174,12 @@ const Navigation: React.FC = () => {
                   console.log('Dropdown logout clicked');
                   handleLogout();
                 }}
-                className="block w-full px-4 py-3 text-sm text-red-600 hover:bg-red-50 text-left"
+                className="flex items-center w-full px-4 py-3 text-sm text-red-600 hover:bg-red-50 text-left"
               >
-                <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
-                Sign out
+                <span className="flex-1">Sign out</span>
               </button>
             </div>
           </div>
