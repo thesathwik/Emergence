@@ -1393,16 +1393,24 @@ const dbHelpers = {
   // Create new user
   createUser: (userData) => {
     return new Promise((resolve, reject) => {
-      const { email, password_hash, name } = userData;
-      
+      const { email, password_hash, name, is_verified } = userData;
+
+      // Ensure is_verified is included in the insert
+      const verificationStatus = is_verified !== undefined ? is_verified : 0;
+
       db.run(
-        'INSERT INTO users (email, password_hash, name) VALUES (?, ?, ?)',
-        [email, password_hash, name],
+        'INSERT INTO users (email, password_hash, name, is_verified) VALUES (?, ?, ?, ?)',
+        [email, password_hash, name, verificationStatus],
         function(err) {
           if (err) {
             reject(err);
           } else {
-            resolve({ id: this.lastID, email, name });
+            resolve({
+              id: this.lastID,
+              email,
+              name,
+              is_verified: verificationStatus
+            });
           }
         }
       );

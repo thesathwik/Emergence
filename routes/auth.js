@@ -180,10 +180,18 @@ router.post('/login', loginValidation, async (req, res) => {
       });
     }
 
+    // Debug logging for verification status
+    console.log(`🔍 Login attempt for ${email}:`, {
+      userId: user.id,
+      isVerified: user.is_verified,
+      verifiedType: typeof user.is_verified,
+      hasVerificationToken: !!user.verification_token
+    });
+
     // Verify password
     const { comparePassword } = require('../auth');
     const isPasswordValid = await comparePassword(password, user.password_hash);
-    
+
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
@@ -191,8 +199,9 @@ router.post('/login', loginValidation, async (req, res) => {
       });
     }
 
-    // Check if user is verified
+    // CRITICAL: Check if user is verified (must be exactly 1)
     if (user.is_verified !== 1) {
+      console.log(`❌ Login blocked for unverified user ${email} (is_verified: ${user.is_verified})`);
       return res.status(403).json({
         success: false,
         message: 'Please verify your email address before logging in. Check your inbox for a verification link.',
@@ -205,6 +214,8 @@ router.post('/login', loginValidation, async (req, res) => {
         }
       });
     }
+
+    console.log(`✅ Login allowed for verified user ${email}`);
 
     // Generate JWT token (only for verified users)
     const token = generateToken({

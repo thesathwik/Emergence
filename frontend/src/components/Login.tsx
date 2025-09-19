@@ -20,6 +20,11 @@ const Login: React.FC = () => {
     general?: string;
   }>({});
 
+  const [verificationRequired, setVerificationRequired] = useState<{
+    required: boolean;
+    userEmail?: string;
+  }>({ required: false });
+
   // Get redirect path from location state or default to home
   const from = (location.state as any)?.from?.pathname || '/';
 
@@ -87,9 +92,26 @@ const Login: React.FC = () => {
     } catch (error: any) {
       // Enhanced error handling
       console.error('Login failed:', error);
-      
+
+      // Check for email verification requirement
+      if (error.requiresVerification) {
+        setVerificationRequired({
+          required: true,
+          userEmail: error.user?.email || formData.email
+        });
+        setValidationErrors(prev => ({
+          ...prev,
+          general: 'Please verify your email address before logging in. Check your inbox for a verification link.'
+        }));
+        return;
+      }
+
       // Set specific error messages based on error type
       if (error.message?.includes('verify your email')) {
+        setVerificationRequired({
+          required: true,
+          userEmail: formData.email
+        });
         setValidationErrors(prev => ({
           ...prev,
           general: 'Please verify your email address before logging in. Check your inbox for a verification link.'
@@ -116,6 +138,25 @@ const Login: React.FC = () => {
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSubmit(e as any);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!verificationRequired.userEmail) return;
+
+    try {
+      const { authService } = await import('../services/authService');
+      await authService.resendVerification(verificationRequired.userEmail);
+      setValidationErrors(prev => ({
+        ...prev,
+        general: 'Verification email sent! Please check your inbox.'
+      }));
+    } catch (error: any) {
+      console.error('Resend verification failed:', error);
+      setValidationErrors(prev => ({
+        ...prev,
+        general: 'Failed to resend verification email. Please try again.'
+      }));
     }
   };
 
@@ -206,17 +247,37 @@ const Login: React.FC = () => {
 
             {/* Error Messages */}
             {(error || validationErrors.general) && (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+              <div className={`${verificationRequired.required ? 'bg-yellow-50 border-yellow-200' : 'bg-red-50 border-red-200'} border rounded-xl p-4`}>
                 <div className="flex">
                   <div className="flex-shrink-0">
-                    <svg className="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                    </svg>
+                    {verificationRequired.required ? (
+                      <svg className="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    ) : (
+                      <svg className="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                    )}
                   </div>
-                  <div className="ml-3">
-                    <p className="text-sm text-red-800">
+                  <div className="ml-3 flex-1">
+                    <p className={`text-sm ${verificationRequired.required ? 'text-yellow-800' : 'text-red-800'}`}>
                       {validationErrors.general || error}
                     </p>
+                    {verificationRequired.required && (
+                      <div className="mt-3">
+                        <button
+                          type="button"
+                          onClick={handleResendVerification}
+                          className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-yellow-800 bg-yellow-100 hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-all duration-200"
+                        >
+                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                          </svg>
+                          Resend Verification Email
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

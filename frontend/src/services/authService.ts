@@ -125,6 +125,15 @@ export const authService = {
       // Handle validation errors
       if (error instanceof AxiosError && error.response?.data) {
         const errorData = error.response.data as AuthError;
+
+        // Special handling for email verification requirement
+        if (error.response.status === 403 && errorData.requiresVerification) {
+          const verificationError = new Error(errorData.message || 'Email verification required');
+          (verificationError as any).requiresVerification = true;
+          (verificationError as any).user = errorData.user;
+          throw verificationError;
+        }
+
         if (errorData.errors && errorData.errors.length > 0) {
           const errorMessage = errorData.errors.map(err => `${err.field}: ${err.message}`).join(', ');
           throw new Error(errorMessage);
