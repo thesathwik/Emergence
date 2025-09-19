@@ -58,65 +58,127 @@ async function sendEmailViaWebAPI(email, name, token, baseUrl) {
     const emailData = {
       personalizations: [{
         to: [{ email: email, name: name }],
-        subject: 'Verify your email address - Emergence'
+        subject: 'Welcome to Emergence - Please verify your email'
       }],
-      from: { email: process.env.FROM_EMAIL || 'emergence.a2a@gmail.com', name: 'Emergence Platform' },
+      from: {
+        email: process.env.FROM_EMAIL || 'emergence.a2a@gmail.com',
+        name: 'Emergence Platform'
+      },
+      reply_to: {
+        email: process.env.FROM_EMAIL || 'emergence.a2a@gmail.com',
+        name: 'Emergence Support'
+      },
+      categories: ['email-verification', 'user-onboarding'],
+      custom_args: {
+        purpose: 'email_verification',
+        user_type: 'new_registration'
+      },
       content: [{
+        type: 'text/plain',
+        value: `Welcome to Emergence!
+
+Hi ${name},
+
+Thank you for joining Emergence, the AI agent sharing platform. To complete your registration and start uploading your own AI agents, please verify your email address.
+
+Verify your email: ${verificationUrl}
+
+This verification link will expire in 24 hours for security reasons.
+
+If you didn't create an account with Emergence, you can safely ignore this email.
+
+---
+Emergence Platform
+AI Agent Marketplace
+https://emergence-production.up.railway.app
+
+This is an automated message. Please do not reply to this email.`
+      }, {
         type: 'text/html',
         value: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; text-align: center;">
-              <h1 style="color: white; margin: 0;">Emergence</h1>
-            </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Emergence</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+            <td align="center" style="padding: 20px 0;">
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <!-- Header -->
+                    <tr>
+                        <td align="center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px; border-radius: 8px 8px 0 0;">
+                            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 300; letter-spacing: 1px;">Emergence</h1>
+                            <p style="color: #ffffff; margin: 10px 0 0 0; opacity: 0.9; font-size: 14px;">AI Agent Marketplace</p>
+                        </td>
+                    </tr>
 
-            <div style="padding: 30px; background: #f9f9f9;">
-              <h2 style="color: #333; margin-bottom: 20px;">Welcome to Emergence!</h2>
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <h2 style="color: #333333; margin: 0 0 20px 0; font-size: 24px; font-weight: 400;">Welcome to Emergence!</h2>
 
-              <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
-                Hi ${name},
-              </p>
+                            <p style="color: #666666; line-height: 1.6; margin: 0 0 20px 0; font-size: 16px;">
+                                Hi <strong>${name}</strong>,
+                            </p>
 
-              <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
-                Thank you for registering with Emergence! To complete your registration and start uploading agents,
-                please verify your email address by clicking the button below:
-              </p>
+                            <p style="color: #666666; line-height: 1.6; margin: 0 0 25px 0; font-size: 16px;">
+                                Thank you for joining Emergence, the premier platform for sharing and discovering AI agents. To complete your registration and start uploading your own agents, please verify your email address.
+                            </p>
 
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${verificationUrl}"
-                   style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                          color: white;
-                          padding: 15px 30px;
-                          text-decoration: none;
-                          border-radius: 5px;
-                          display: inline-block;
-                          font-weight: bold;">
-                  Verify Email Address
-                </a>
-              </div>
+                            <!-- CTA Button -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                    <td align="center" style="padding: 25px 0;">
+                                        <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                                            <tr>
+                                                <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 6px;">
+                                                    <a href="${verificationUrl}" style="display: inline-block; padding: 16px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 6px;">
+                                                        Verify Email Address
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
 
-              <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
-                If the button doesn't work, you can copy and paste this link into your browser:
-              </p>
+                            <p style="color: #666666; line-height: 1.6; margin: 25px 0 20px 0; font-size: 14px;">
+                                If the button above doesn't work, copy and paste this link into your browser:
+                            </p>
 
-              <p style="color: #667eea; word-break: break-all; margin-bottom: 20px;">
-                ${verificationUrl}
-              </p>
+                            <p style="color: #667eea; word-break: break-all; margin: 0 0 25px 0; font-size: 14px; background-color: #f8f9fa; padding: 15px; border-radius: 4px; border-left: 3px solid #667eea;">
+                                ${verificationUrl}
+                            </p>
 
-              <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
-                This verification link will expire in 24 hours for security reasons.
-              </p>
+                            <p style="color: #888888; line-height: 1.6; margin: 0 0 20px 0; font-size: 14px;">
+                                <strong>Security Note:</strong> This verification link will expire in 24 hours. If you didn't create an account with Emergence, you can safely ignore this email.
+                            </p>
+                        </td>
+                    </tr>
 
-              <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
-                If you didn't create an account with Emergence, you can safely ignore this email.
-              </p>
-
-              <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-
-              <p style="color: #999; font-size: 12px; text-align: center;">
-                This is an automated email from Emergence. Please do not reply to this email.
-              </p>
-            </div>
-          </div>
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 8px 8px; border-top: 1px solid #e9ecef;">
+                            <p style="color: #6c757d; margin: 0 0 10px 0; font-size: 14px; text-align: center;">
+                                <strong>Emergence Platform</strong><br>
+                                AI Agent Marketplace
+                            </p>
+                            <p style="color: #6c757d; margin: 0; font-size: 12px; text-align: center;">
+                                This is an automated message. Please do not reply to this email.<br>
+                                Need help? Visit our support center at emergence-production.up.railway.app
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
         `
       }]
     };
@@ -195,8 +257,29 @@ async function sendEmailWithFallbacks(email, name, token, baseUrl) {
     };
   }
 
+  // Skip SMTP entirely for production - go straight to Web API
+  const isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT;
+
+  if (isProduction) {
+    console.log('🚀 Production environment detected - using SendGrid Web API directly');
+    try {
+      await sendEmailViaWebAPI(email, name, token, baseUrl);
+      console.log('✅ Verification email sent successfully via Web API');
+      return { success: true, method: 'web_api' };
+    } catch (webApiError) {
+      console.error('❌ SendGrid Web API error:', webApiError.message);
+      return {
+        success: false,
+        message: 'Email service temporarily unavailable. Please use the manual verification link.',
+        error: webApiError.message,
+        verificationUrl: `${baseUrl}/verify-email?token=${token}`
+      };
+    }
+  }
+
+  // Development environment - try SMTP first, then Web API
   const verificationUrl = `${baseUrl}/verify-email?token=${token}`;
-  
+
   const mailOptions = {
     from: `"Emergence Platform" <${process.env.FROM_EMAIL || 'emergence.a2a@gmail.com'}>`,
     to: email,
@@ -206,50 +289,50 @@ async function sendEmailWithFallbacks(email, name, token, baseUrl) {
         <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; text-align: center;">
           <h1 style="color: white; margin: 0;">Emergence</h1>
         </div>
-        
+
         <div style="padding: 30px; background: #f9f9f9;">
           <h2 style="color: #333; margin-bottom: 20px;">Welcome to Emergence!</h2>
-          
+
           <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
             Hi ${name},
           </p>
-          
+
           <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
-            Thank you for registering with Emergence! To complete your registration and start uploading agents, 
+            Thank you for registering with Emergence! To complete your registration and start uploading agents,
             please verify your email address by clicking the button below:
           </p>
-          
+
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${verificationUrl}" 
-               style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                      color: white; 
-                      padding: 15px 30px; 
-                      text-decoration: none; 
-                      border-radius: 5px; 
-                      display: inline-block; 
+            <a href="${verificationUrl}"
+               style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                      color: white;
+                      padding: 15px 30px;
+                      text-decoration: none;
+                      border-radius: 5px;
+                      display: inline-block;
                       font-weight: bold;">
               Verify Email Address
             </a>
           </div>
-          
+
           <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
             If the button doesn't work, you can copy and paste this link into your browser:
           </p>
-          
+
           <p style="color: #667eea; word-break: break-all; margin-bottom: 20px;">
             ${verificationUrl}
           </p>
-          
+
           <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
             This verification link will expire in 24 hours for security reasons.
           </p>
-          
+
           <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
             If you didn't create an account with Emergence, you can safely ignore this email.
           </p>
-          
+
           <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-          
+
           <p style="color: #999; font-size: 12px; text-align: center;">
             This is an automated email from Emergence. Please do not reply to this email.
           </p>
