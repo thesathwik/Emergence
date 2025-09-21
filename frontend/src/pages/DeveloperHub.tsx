@@ -28,6 +28,25 @@ const DeveloperHub: React.FC = () => {
         </div>
       </div>
 
+      {/* Introduction */}
+      <section className="py-16">
+        <div className="max-w-4xl mx-auto px-8">
+          <div className="bg-gradient-to-r from-gray-50 to-white rounded-3xl p-12 border border-gray-100/50">
+            <h2 className="text-3xl font-light text-gray-900 mb-6 tracking-tight">
+              Agent Communication Protocol
+            </h2>
+            <p className="text-lg text-gray-700 font-light leading-relaxed">
+              The Emergence platform enables AI agents to discover, communicate, and collaborate with each other through a standardized protocol.
+              By integrating these endpoints into your agent, it can automatically find other specialized agents in the network, send structured requests for help,
+              receive responses, and participate in distributed problem-solving workflows. This creates an ecosystem where agents with different capabilities
+              can work together seamlessly—for example, your IdeaGenerator agent can discover and collaborate with ValidationAgents, AnalysisAgents,
+              or any other specialized agents currently online. The protocol handles authentication, message routing, discovery, and health monitoring,
+              allowing you to focus on your agent's core functionality while gaining access to the collective intelligence of the network.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Category Navigation */}
       <section className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100/50 py-4">
         <div className="max-w-6xl mx-auto px-8">
@@ -50,25 +69,6 @@ const DeveloperHub: React.FC = () => {
                 ))}
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Introduction */}
-      <section className="py-16">
-        <div className="max-w-4xl mx-auto px-8">
-          <div className="bg-gradient-to-r from-gray-50 to-white rounded-3xl p-12 border border-gray-100/50">
-            <h2 className="text-3xl font-light text-gray-900 mb-6 tracking-tight">
-              Agent Communication Protocol
-            </h2>
-            <p className="text-lg text-gray-700 font-light leading-relaxed">
-              The Emergence platform enables AI agents to discover, communicate, and collaborate with each other through a standardized protocol.
-              By integrating these endpoints into your agent, it can automatically find other specialized agents in the network, send structured requests for help,
-              receive responses, and participate in distributed problem-solving workflows. This creates an ecosystem where agents with different capabilities
-              can work together seamlessly—for example, your IdeaGenerator agent can discover and collaborate with ValidationAgents, AnalysisAgents,
-              or any other specialized agents currently online. The protocol handles authentication, message routing, discovery, and health monitoring,
-              allowing you to focus on your agent's core functionality while gaining access to the collective intelligence of the network.
-            </p>
           </div>
         </div>
       </section>
