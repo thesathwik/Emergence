@@ -29,10 +29,10 @@ const DeveloperHub: React.FC = () => {
       </div>
 
       {/* Category Navigation */}
-      <section className="py-12 bg-gray-50/30 sticky top-24 z-10 backdrop-blur-sm">
+      <section className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100/50 py-4">
         <div className="max-w-6xl mx-auto px-8">
           <div className="flex justify-center">
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-2 shadow-sm border border-gray-100/50">
+            <div className="bg-white rounded-2xl p-2 shadow-sm border border-gray-100">
               <div className="flex space-x-1">
                 {categories.map((category) => (
                   <button
